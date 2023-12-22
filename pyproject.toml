@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "code-sigmod-demo-gpt-schema-matcher"
+version = "0.1.0"
+description = ""
+authors = ["Marcel Parciak <marcel.parciak@uhasselt.be>", "Brecht Vandevoort <brecht.vandevoort@uhasselt.be>", "Frank Neven <frank.neven@uhasselt.be>", "Liesbet M. Peeters <liesbet.peeters@uhasselt.be", "Stijn Vansummeren <stijn.vansummeren@uhasselt.be"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+streamlit = "^1.29.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
