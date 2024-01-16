@@ -14,3 +14,37 @@ with st.expander("Load Data"):
 with st.expander("Results"):
     create_visualize_screen()
     
+
+def ugly_test_method():
+    import json
+    from utils.backend import schema_match
+    from utils.models import Attribute, Parameters, Relation
+    with open("test_inputs/Patients_Person.json", "r") as f:
+        test_input = json.load(f)
+    params = Parameters(
+        source_relation=Relation(
+            name=test_input["source_relation"]["name"],
+            attributes=[
+                Attribute(
+                    name=attr["name"],
+                    description=attr["description"],
+                ) for attr in test_input["source_relation"]["attributes"]
+            ],
+            description=test_input["source_relation"]["description"],
+        ),
+        target_relation=Relation(
+            name=test_input["target_relation"]["name"],
+            attributes=[
+                Attribute(
+                    name=attr["name"],
+                    description=attr["description"],
+                ) for attr in test_input["target_relation"]["attributes"]
+            ],
+            description=test_input["target_relation"]["description"],
+        )
+    )
+    result = schema_match(parameters=params)
+    st.write(result)
+
+
+st.button("Test Run", on_click=ugly_test_method)
