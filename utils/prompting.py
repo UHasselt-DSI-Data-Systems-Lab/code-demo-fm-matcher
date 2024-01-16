@@ -7,31 +7,35 @@ from typing import Any, Dict, List, Tuple
 from jinja2 import Environment
 from openai.types.completion_create_params import CompletionCreateParamsBase
 
-from .models import Attribute, Parameters
+from .models import Attribute, Parameters, Prompt
 
 
-def generate_prompts(parameters: Parameters) -> List[CompletionCreateParamsBase]:
+def generate_prompts(parameters: Parameters) -> List[Prompt]:
     """Generate OpenAI Chat Completion prompts from parameters."""
-    prompt_oneToN = [
-        (s, parameters.target_relation.attributes)
-        for s in parameters.source_relation.attributes
+    rendered_oneToN = [
+        Prompt(
+            attributes=([source_attribute], parameters.target_relation.attributes),
+            prompt=CompletionCreateParamsBase(
+                {  # TODO: check where and how to ask these parameters from settings
+                    "model": "gpt-3.5-turbo-1106",
+                    "prompt": render_prompt(
+                        (source_attribute, parameters.target_relation.attributes),
+                        parameters,
+                        "oneToN",
+                    ),
+                    "n": 3,
+                }
+            ),
+        )
+        for source_attribute in parameters.source_relation.attributes
     ]
-    rendered_oneToN = [render_prompt(p, parameters, "oneToN") for p in prompt_oneToN]
 
     # prompt_NtoOne = [
     #    (parameters.source_relation.attributes, t)
     #    for t in parameters.target_relation.attributes
     # ]
 
-    return [
-        CompletionCreateParamsBase(
-            {
-                "model": "gpt-3.5-turbo-1106",
-                "prompt": rendered_oneToN,
-                "n": 3,
-            }
-        )
-    ]
+    return rendered_oneToN
 
 
 @functools.cache
@@ -73,16 +77,16 @@ def render_prompt(
     env = Environment()
     return [
         {
-            "role": p["role"],
-            "content": env.from_string(p["content"]).render(
+            "role": part["role"],
+            "content": env.from_string(part["content"]).render(
                 **{
                     "source_relation": parameters.source_relation,
-                    "source_attribute": s,
+                    "source_attribute": source,
                     "target_relation": parameters.target_relation,
-                    "target_attribute": t,
+                    "target_attribute": target,
                     # TODO: what about feedback?
                 }
             ),
         }
-        for p, s, t in template_iterator(template, sources, targets)
+        for part, source, target in template_iterator(template, sources, targets)
     ]

@@ -1,22 +1,14 @@
-import itertools
+import asyncio
 from typing import List
 
-from openai.types.completion_create_params import CompletionCreateParamsBase
-
-from .models import AttributePair, Decision, Parameters, Result, ResultPair, Vote
+from .models import AttributePair, Decision, Parameters, Prompt, Result, ResultPair, Vote
 
 
 def generate_result(
-    parameters: Parameters, prompts: List[CompletionCreateParamsBase]
+    parameters: Parameters, prompts: List[Prompt]
 ) -> Result:
     """Generate a result from parameters and prompts."""
-    attribute_pairs = [
-        AttributePair(s, t)
-        for s, t in itertools.product(
-            parameters.source_relation.attributes,
-            parameters.target_relation.attributes,
-        )
-    ]
+    # TODO: implement this from here on
     return Result(
         name="test",
         parameters=parameters,

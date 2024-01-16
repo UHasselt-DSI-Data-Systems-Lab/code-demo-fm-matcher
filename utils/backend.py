@@ -23,10 +23,6 @@ def schema_match(
             )
     parameters = store_parameters(parameters)
     prompts = generate_prompts(parameters)
-    # TODO: proceed working here
-    # the prompt looks rendered correctly, but might not be correctly formatted in the sense that it is a list of list of lists... (or something like that, investigate!)
-    import json
-    print(json.dumps(prompts[-1],indent=2))
     result = generate_result(parameters, prompts)
     result = store_result(result)
     return result
