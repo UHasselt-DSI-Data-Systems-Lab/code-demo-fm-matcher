@@ -5,20 +5,22 @@ import os
 from typing import Any, Dict, List, Tuple
 
 from jinja2 import Environment
-from openai.types.completion_create_params import CompletionCreateParamsBase
+from openai.types.chat.completion_create_params import (
+    CompletionCreateParamsNonStreaming,
+)
 
 from .models import Attribute, Parameters, Prompt
 
 
-def generate_prompts(parameters: Parameters) -> List[Prompt]:
+def build_prompts(parameters: Parameters) -> List[Prompt]:
     """Generate OpenAI Chat Completion prompts from parameters."""
     rendered_oneToN = [
         Prompt(
             attributes=([source_attribute], parameters.target_relation.attributes),
-            prompt=CompletionCreateParamsBase(
+            prompt=CompletionCreateParamsNonStreaming(
                 {  # TODO: check where and how to ask these parameters from settings
                     "model": "gpt-3.5-turbo-1106",
-                    "prompt": render_prompt(
+                    "messages": render_prompt(
                         (source_attribute, parameters.target_relation.attributes),
                         parameters,
                         "oneToN",

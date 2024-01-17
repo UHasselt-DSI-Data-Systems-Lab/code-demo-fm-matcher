@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Dict, List, Tuple
 
-from openai.types.completion_create_params import CompletionCreateParamsBase
+from openai.types.completion_create_params import CompletionCreateParams
 
 
 class Vote(StrEnum):
@@ -75,4 +75,10 @@ class Result:
 @dataclass
 class Prompt:
     attributes: Tuple[List[Attribute], List[Attribute]]
-    prompt: CompletionCreateParamsBase
+    prompt: CompletionCreateParams
+
+
+@dataclass
+class Answer:
+    attributes: Tuple[List[Attribute], List[Attribute]]
+    answer: str

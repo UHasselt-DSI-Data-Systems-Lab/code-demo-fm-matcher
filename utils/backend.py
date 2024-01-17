@@ -1,7 +1,8 @@
 from .models import Feedback, Parameters, Relation, Result
-from .processing import generate_result
-from .prompting import generate_prompts
+from .prompt_sending import send_prompts
+from .prompt_building import build_prompts
 from .storage import store_parameters, store_result
+
 
 def schema_match(
     parameters: Parameters = None,
@@ -22,7 +23,9 @@ def schema_match(
                 feedback=feedback,
             )
     parameters = store_parameters(parameters)
-    prompts = generate_prompts(parameters)
-    result = generate_result(parameters, prompts)
-    result = store_result(result)
-    return result
+    prompts = build_prompts(parameters)
+    answers = send_prompts(parameters, prompts)
+    #result = generate_results(parameters, answers)
+    #result = store_result(result)
+    #return result
+    return answers

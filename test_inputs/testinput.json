@@ -1,0 +1,34 @@
+{
+	"source_relation": {
+		"name": "People",
+		"description": "A table that contains information about people.",
+		"attributes": [
+			{
+				"name": "name",
+				"description": "The full name of someone."
+			},
+			{
+				"name": "gender",
+				"description": "This is the gender of someone."
+			}
+		]
+	},
+	"target_relation": {
+		"name": "Persons",
+		"description": "This relation contains demogprahic information of patients.",
+		"attributes": [
+			{
+				"name": "first_name",
+				"description": "A patients given name, including middle names."
+			},
+			{
+				"name": "last_name",
+				"description": "A patients family name."
+			},
+			{
+				"name": "sex",
+				"description": "The genotypical sex of a patient."
+			}
+		]
+	}
+}
