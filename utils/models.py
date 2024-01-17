@@ -1,3 +1,4 @@
+from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Dict, List, Tuple
@@ -17,6 +18,23 @@ class Relation:
     attributes: list = field(default_factory=list)
     description: str = None
 
+    @staticmethod
+    def from_dict(json_obj: dict) -> Relation:
+        return Relation(
+            name=json_obj["name"],
+            attributes=[
+                Attribute.from_dict(attr) for attr in json_obj["attributes"]
+            ],
+            description=json_obj.get("description", ""),
+        )
+    
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "attributes": [attr.to_dict() for attr in self.attributes],
+            "description": self.description,
+        }
+
 
 @dataclass
 class Attribute:
@@ -25,6 +43,19 @@ class Attribute:
 
     def __hash__(self):
         return hash(self.name)
+
+    @staticmethod
+    def from_dict(json_obj: dict) -> Attribute:
+        return Attribute(
+            name=json_obj["name"],
+            description=json_obj.get("description", None),
+        )
+    
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "description": self.description,
+        }
 
 
 @dataclass

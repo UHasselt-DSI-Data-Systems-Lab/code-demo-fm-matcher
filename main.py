@@ -2,15 +2,22 @@ import streamlit as st
 
 from utils.screen_load import create_load_screen
 from utils.screen_visualize import create_visualize_screen
+from utils.session_state import SessionState
 
 st.title("Schema Matching for Health Data using Foundation Models")
-st.write("This will be an actual demo some day.")
 
-with st.expander("Load Data"):
-    create_load_screen()
+# Load session state, creating a new object if none exists
+session_state_obj = st.session_state.get("session_state", None)
+if session_state_obj is None:
+    st.session_state["session_state"] = session_state_obj = SessionState()
 
-with st.expander("Results"):
-    create_visualize_screen()
+# provide ability to reset the app
+if st.button("Reset App"):
+    st.session_state["session_state"] = session_state_obj = SessionState()
+    
+create_load_screen(session_state_obj)
+
+create_visualize_screen()
     
 
 def ugly_test_method():
