@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional
 
 from openai.types.completion_create_params import CompletionCreateParams
 
@@ -16,7 +16,7 @@ class Vote(StrEnum):
 class Relation:
     name: str
     attributes: list = field(default_factory=list)
-    description: str = None
+    description: Optional[str] = None
 
     @staticmethod
     def from_dict(json_obj: dict) -> Relation:
@@ -39,7 +39,7 @@ class Relation:
 @dataclass
 class Attribute:
     name: str
-    description: str = None
+    description: Optional[str] = None
     included: bool = True
 
     def __hash__(self):
@@ -72,7 +72,7 @@ class AttributePair:
 
 @dataclass
 class Feedback:
-    general: str
+    general: Optional[str]
     per_attribute: Dict[Attribute, str] = field(default_factory=dict)
     per_attribute_pair: Dict[AttributePair, str] = field(default_factory=dict)
 
@@ -107,12 +107,18 @@ class Result:
 
 
 @dataclass
+class PromptAttributePair:
+    sources: List[Attribute] = field(default_factory=list)
+    targets: List[Attribute] = field(default_factory=list)
+
+
+@dataclass
 class Prompt:
-    attributes: Tuple[List[Attribute], List[Attribute]]
+    attributes: PromptAttributePair
     prompt: CompletionCreateParams
 
 
 @dataclass
 class Answer:
-    attributes: Tuple[List[Attribute], List[Attribute]]
+    attributes: PromptAttributePair
     answer: str

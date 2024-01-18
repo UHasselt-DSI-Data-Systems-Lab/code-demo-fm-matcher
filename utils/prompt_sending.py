@@ -7,6 +7,7 @@ from openai import AsyncOpenAI, APITimeoutError, InternalServerError, RateLimitE
 from openai.types.chat import ChatCompletion, CompletionCreateParams
 import tenacity
 
+from .errors import NotDoneException
 from .models import Answer, Parameters, Prompt
 
 
@@ -42,10 +43,6 @@ def result_into_answers(result: ChatCompletion, prompt: Prompt) -> List[Answer]:
     ]
 
 
-class NotDoneException(Exception):
-    """Exception to indicate that the prompt has not been completed yet."""
-
-
 async def process_and_store_prompt(
     parameters: Parameters,
     prompt: Prompt,
@@ -67,8 +64,8 @@ async def process_and_store_prompt(
                 answers = result_into_answers(result, prompt)
                 for answer in answers:
                     if is_valid_answer(answer):
-                        _completion_prompt.n -= 1
-                if _completion_prompt.n > 0:
+                        _completion_prompt["n"] -= 1
+                if _completion_prompt["n"] > 0:
                     raise NotDoneException("Not enough valid answers provided.")
     except tenacity.RetryError:
         pass

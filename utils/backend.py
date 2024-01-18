@@ -1,6 +1,7 @@
 from .models import Feedback, Parameters, Relation, Result
 from .prompt_sending import send_prompts
 from .prompt_building import build_prompts
+from .prompt_postprocessing import postprocess_answers
 from .storage import store_parameters, store_result
 
 
@@ -25,12 +26,14 @@ def schema_match(
     # method stub
     from .models import AttributePair, Decision, ResultPair, Vote
     import itertools
-    #parameters = store_parameters(parameters)
-    #prompts = build_prompts(parameters)
-    #answers = send_prompts(parameters, prompts)
-    #result = generate_results(parameters, answers)
-    #result = store_result(result)
-    #return result
+    # comment by Marcel: the part below is now fully functional for basic types of requests
+    # parameters = store_parameters(parameters)
+    # prompts = build_prompts(parameters)
+    # answers = send_prompts(parameters, prompts)
+    # result = postprocess_answers(answers, parameters)
+    # result = store_result(result)
+    # return result
+
     attribute_pairs = [
         AttributePair(
             source=src,

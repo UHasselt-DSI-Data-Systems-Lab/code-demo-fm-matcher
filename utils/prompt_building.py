@@ -9,14 +9,17 @@ from openai.types.chat.completion_create_params import (
     CompletionCreateParamsNonStreaming,
 )
 
-from .models import Attribute, Parameters, Prompt
+from .models import Attribute, Parameters, Prompt, PromptAttributePair
 
 
 def build_prompts(parameters: Parameters) -> List[Prompt]:
     """Generate OpenAI Chat Completion prompts from parameters."""
     rendered_oneToN = [
         Prompt(
-            attributes=([source_attribute], parameters.target_relation.attributes),
+            attributes=PromptAttributePair(
+                [source_attribute],
+                parameters.target_relation.attributes
+            ),
             prompt=CompletionCreateParamsNonStreaming(
                 {  # TODO: check where and how to ask these parameters from settings
                     "model": "gpt-3.5-turbo-1106",
