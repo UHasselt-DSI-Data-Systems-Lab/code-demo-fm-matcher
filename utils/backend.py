@@ -22,10 +22,34 @@ def schema_match(
                 target_relation=target_relation,
                 feedback=feedback,
             )
-    parameters = store_parameters(parameters)
-    prompts = build_prompts(parameters)
-    answers = send_prompts(parameters, prompts)
+    # method stub
+    from .models import AttributePair, Decision, ResultPair, Vote
+    import itertools
+    #parameters = store_parameters(parameters)
+    #prompts = build_prompts(parameters)
+    #answers = send_prompts(parameters, prompts)
     #result = generate_results(parameters, answers)
     #result = store_result(result)
     #return result
-    return answers
+    attribute_pairs = [
+        AttributePair(
+            source=src,
+            target=trgt,
+        ) for (src, trgt) in itertools.product(parameters.source_relation.attributes, parameters.target_relation.attributes)
+    ]
+    return Result(
+        name="test",
+        parameters=parameters,
+        pairs={
+            ap: ResultPair(
+                ap,
+                votes=[
+                    Decision(vote=Vote.NO, explanation="Testing"),
+                    Decision(vote=Vote.NO, explanation="Testing"),
+                    Decision(vote=Vote.NO, explanation="Testing"),
+                ],
+                score=0.0,
+            )
+            for ap in attribute_pairs
+        },
+    )

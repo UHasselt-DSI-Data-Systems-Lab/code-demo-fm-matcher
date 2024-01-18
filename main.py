@@ -19,7 +19,7 @@ def ugly_test_method():
     import json
     from utils.backend import schema_match
     from utils.models import Attribute, Parameters, Relation
-    with open("test_inputs/Patients_Person.json", "r") as f:
+    with open("test_inputs/testinput.json", "r") as f:
         test_input = json.load(f)
     params = Parameters(
         source_relation=Relation(
