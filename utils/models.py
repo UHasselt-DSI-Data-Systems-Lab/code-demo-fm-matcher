@@ -40,6 +40,7 @@ class Relation:
 class Attribute:
     name: str
     description: str = None
+    included: bool = True
 
     def __hash__(self):
         return hash(self.name)
@@ -49,12 +50,14 @@ class Attribute:
         return Attribute(
             name=json_obj["name"],
             description=json_obj.get("description", None),
+            included=json_obj.get("included", True),
         )
     
     def to_dict(self) -> dict:
         return {
             "name": self.name,
             "description": self.description,
+            "included": self.included,
         }
 
 
