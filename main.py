@@ -12,13 +12,15 @@ if session_state_obj is None:
     st.session_state["session_state"] = session_state_obj = ModelSessionState()
 
 
-# provide ability to reset the app
-if st.button("Reset App"):
-    # Delete all the items in streamlit session state
-    for key in st.session_state.keys():
-        del st.session_state[key]
-    # Create a new object to store session state
-    st.session_state["session_state"] = session_state_obj = ModelSessionState()
+with st.sidebar:
+    # provide ability to reset the app
+    if st.button("Reset App"):
+        # Delete all the items in streamlit session state
+        for key in st.session_state.keys():
+            del st.session_state[key]
+        # Create a new object to store session state
+        st.session_state["session_state"] = session_state_obj = ModelSessionState()
+        st.experimental_rerun()
 
 create_load_screen(session_state_obj)
 
@@ -27,36 +29,36 @@ create_visualize_screen()
 
 
 
-def ugly_test_method():
-    import json
-    from utils.backend import schema_match
-    from utils.models import Attribute, Parameters, Relation
-    with open("test_inputs/Patients_Person.json", "r") as f:
-        test_input = json.load(f)
-    params = Parameters(
-        source_relation=Relation(
-            name=test_input["source_relation"]["name"],
-            attributes=[
-                Attribute(
-                    name=attr["name"],
-                    description=attr["description"],
-                ) for attr in test_input["source_relation"]["attributes"]
-            ],
-            description=test_input["source_relation"]["description"],
-        ),
-        target_relation=Relation(
-            name=test_input["target_relation"]["name"],
-            attributes=[
-                Attribute(
-                    name=attr["name"],
-                    description=attr["description"],
-                ) for attr in test_input["target_relation"]["attributes"]
-            ],
-            description=test_input["target_relation"]["description"],
-        )
-    )
-    result = schema_match(parameters=params)
-    st.write(result)
+# def ugly_test_method():
+#     import json
+#     from utils.backend import schema_match
+#     from utils.models import Attribute, Parameters, Relation
+#     with open("test_inputs/Patients_Person.json", "r") as f:
+#         test_input = json.load(f)
+#     params = Parameters(
+#         source_relation=Relation(
+#             name=test_input["source_relation"]["name"],
+#             attributes=[
+#                 Attribute(
+#                     name=attr["name"],
+#                     description=attr["description"],
+#                 ) for attr in test_input["source_relation"]["attributes"]
+#             ],
+#             description=test_input["source_relation"]["description"],
+#         ),
+#         target_relation=Relation(
+#             name=test_input["target_relation"]["name"],
+#             attributes=[
+#                 Attribute(
+#                     name=attr["name"],
+#                     description=attr["description"],
+#                 ) for attr in test_input["target_relation"]["attributes"]
+#             ],
+#             description=test_input["target_relation"]["description"],
+#         )
+#     )
+#     result = schema_match(parameters=params)
+#     st.write(result)
 
 
-st.button("Test Run", on_click=ugly_test_method)
+# st.button("Test Run", on_click=ugly_test_method)
