@@ -1,4 +1,5 @@
 import json
+import time
 import streamlit as st
 from utils.model_session_state import ModelSessionState
 from utils.models import Relation, Attribute, Parameters
@@ -20,7 +21,7 @@ def create_load_screen(mss: ModelSessionState):
             json_dict = json.load(uploaded_file)
             mss.source_relation = Relation.from_dict(json_dict["source_relation"])
             mss.target_relation = Relation.from_dict(json_dict["target_relation"])
-            st.experimental_rerun()
+            st.rerun()
             #st.info(f"Successfully loaded relations **{session_state.source_relation.name}** and **{session_state.target_relation.name}**")
     
     if mss.source_relation is not None:
@@ -40,7 +41,9 @@ def create_load_screen(mss: ModelSessionState):
                     target_relation=mss.target_relation,
                 )
                 mss.result = schema_match(params)
-            st.experimental_rerun()
+                st.info("Debug info: manual sleep time for testing purposes!")
+                time.sleep(4)
+            st.rerun()
 
 
 def _display_relation(relation: Relation, names_fixed: bool = False):
@@ -68,7 +71,7 @@ def _display_relation(relation: Relation, names_fixed: bool = False):
         attr_key_name = f"{relation.name}.Attr{i}.name"
         if attr_key_name not in st.session_state:
             st.session_state[attr_key_name] = attr.name
-        st.text_input(f"Attribute {i+1}", attr.name, key=attr_key_name, on_change=on_change_attrname, args=(attr, attr_key_name), disabled=names_fixed)
+        st.text_input(f"Attribute {i+1}", key=attr_key_name, on_change=on_change_attrname, args=(attr, attr_key_name), disabled=names_fixed)
         # Attribute description
         attr_key_descr = f"{relation.name}.Attr{i}.description"
         if attr_key_descr not in st.session_state:

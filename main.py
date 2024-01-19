@@ -20,8 +20,12 @@ with st.sidebar:
             del st.session_state[key]
         # Create a new object to store session state
         st.session_state["session_state"] = session_state_obj = ModelSessionState()
-        st.experimental_rerun()
+        st.rerun()
 
 create_load_screen(session_state_obj)
 
 create_visualize_screen()
+
+if session_state_obj.result is not None:
+    st.header("Result")
+    st.write(session_state_obj.result)
