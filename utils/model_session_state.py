@@ -12,6 +12,7 @@ class ModelSessionState:
     input_fixed: bool = False
     result: Optional[Result] = None
     uid_counter: int = 0 # used for generating unique ids for attributes
+    selected_attrs: list[int] = field(default_factory=list)
 
     def get_next_uid(self) -> int:
         """Returns the next unique id."""
