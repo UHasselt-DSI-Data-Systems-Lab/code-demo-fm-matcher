@@ -32,7 +32,7 @@ class Attribute:
     included: bool = True
 
     def __hash__(self):
-        return hash(self.name, self.description)
+        return hash((self.name, self.description))
 
 
 @dataclass
