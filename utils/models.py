@@ -1,9 +1,22 @@
-from __future__ import annotations
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from enum import StrEnum
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, get_args, get_origin
 
 from openai.types.completion_create_params import CompletionCreateParams
+
+
+def generic_from_dict(cls: dataclass, data: Any) -> Any:
+    """Conerts a dictionary to a dataclass object given in cls.
+    Thanks to Salman Mehmood of https://www.delftstack.com/howto/python/python-dataclass-from-dict/
+    I added the possibility to convert lists of dataclasses as well. When using this method, make sure that all attributes are properly annotated with their types, e.g. `List[Attributes]` instead of `list`.
+    """
+    if get_origin(cls) == list:
+        return [generic_from_dict(get_args(cls)[0], d) for d in data]
+    try:
+        types = {f.name: f.type for f in fields(cls)}
+        return cls(**{f: generic_from_dict(types[f], data[f]) for f in data})
+    except:  # noqa: E722
+        return data
 
 
 class Vote(StrEnum):
@@ -13,52 +26,20 @@ class Vote(StrEnum):
 
 
 @dataclass
-class Relation:
-    name: str
-    attributes: list = field(default_factory=list)
-    description: Optional[str] = None
-
-    @staticmethod
-    def from_dict(json_obj: dict) -> Relation:
-        return Relation(
-            name=json_obj["name"],
-            attributes=[
-                Attribute.from_dict(attr) for attr in json_obj["attributes"]
-            ],
-            description=json_obj.get("description", ""),
-        )
-    
-    def to_dict(self) -> dict:
-        return {
-            "name": self.name,
-            "attributes": [attr.to_dict() for attr in self.attributes],
-            "description": self.description,
-        }
-
-
-@dataclass
 class Attribute:
     name: str
     description: Optional[str] = None
     included: bool = True
 
     def __hash__(self):
-        return hash(self.name)
+        return hash(self.name, self.description)
 
-    @staticmethod
-    def from_dict(json_obj: dict) -> Attribute:
-        return Attribute(
-            name=json_obj["name"],
-            description=json_obj.get("description", None),
-            included=json_obj.get("included", True),
-        )
-    
-    def to_dict(self) -> dict:
-        return {
-            "name": self.name,
-            "description": self.description,
-            "included": self.included,
-        }
+
+@dataclass
+class Relation:
+    name: str
+    attributes: List[Attribute] = field(default_factory=list)
+    description: Optional[str] = None
 
 
 @dataclass

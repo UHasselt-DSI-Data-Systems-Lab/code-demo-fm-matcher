@@ -2,7 +2,7 @@ import json
 import time
 import streamlit as st
 from utils.model_session_state import ModelSessionState
-from utils.models import Relation, Attribute, Parameters
+from utils.models import Relation, Attribute, Parameters, generic_from_dict
 from utils.backend import schema_match
 
 def create_load_screen(mss: ModelSessionState):
@@ -19,8 +19,8 @@ def create_load_screen(mss: ModelSessionState):
         if uploaded_file is not None:
             st.session_state["upload_id"] += 1
             json_dict = json.load(uploaded_file)
-            mss.source_relation = Relation.from_dict(json_dict["source_relation"])
-            mss.target_relation = Relation.from_dict(json_dict["target_relation"])
+            mss.source_relation = generic_from_dict(Relation, json_dict["source_relation"])
+            mss.target_relation = generic_from_dict(Relation, json_dict["target_relation"])
             st.rerun()
             #st.info(f"Successfully loaded relations **{session_state.source_relation.name}** and **{session_state.target_relation.name}**")
     
