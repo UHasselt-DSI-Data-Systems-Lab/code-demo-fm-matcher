@@ -11,4 +11,10 @@ class ModelSessionState:
     target_relation: Optional[Relation] = None
     input_fixed: bool = False
     result: Optional[Result] = None
+    uid_counter: int = 0 # used for generating unique ids for attributes
+
+    def get_next_uid(self) -> int:
+        """Returns the next unique id."""
+        self.uid_counter += 1
+        return self.uid_counter
 

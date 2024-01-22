@@ -26,7 +26,7 @@ with st.sidebar:
 
 create_load_screen(session_state_obj)
 
-create_visualize_screen()
+create_visualize_screen(session_state_obj)
 
 if session_state_obj.result is not None:
     st.header("Result")

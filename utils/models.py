@@ -30,6 +30,7 @@ class Attribute:
     name: str
     description: Optional[str] = None
     included: bool = True
+    uid: Optional[int] = None
 
     def __hash__(self):
         return hash((self.name, self.description))

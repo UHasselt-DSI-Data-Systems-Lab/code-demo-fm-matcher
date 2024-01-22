@@ -19,8 +19,14 @@ def create_load_screen(mss: ModelSessionState):
         if uploaded_file is not None:
             st.session_state["upload_id"] += 1
             json_dict = json.load(uploaded_file)
+            # load relations from json
             mss.source_relation = generic_from_dict(Relation, json_dict["source_relation"])
             mss.target_relation = generic_from_dict(Relation, json_dict["target_relation"])
+            # set unique ids for each attribute
+            for attr in mss.source_relation.attributes:
+                attr.uid = mss.get_next_uid()
+            for attr in mss.target_relation.attributes:
+                attr.uid = mss.get_next_uid()
             st.rerun()
             #st.info(f"Successfully loaded relations **{session_state.source_relation.name}** and **{session_state.target_relation.name}**")
     
@@ -45,7 +51,7 @@ def create_load_screen(mss: ModelSessionState):
                 )
                 mss.result = schema_match(params)
                 st.info("Debug info: manual sleep time for testing purposes!")
-                time.sleep(4)
+                time.sleep(1)
             st.rerun()
 
 
