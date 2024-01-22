@@ -9,6 +9,7 @@ import tenacity
 
 from .errors import NotDoneException
 from .models import Answer, Parameters, Prompt
+from .storage import store_answer, store_chatcompletion
 
 
 def send_prompts(parameters: Parameters, prompts: List[Prompt]) -> List[Answer]:
@@ -51,6 +52,7 @@ async def process_and_store_prompt(
     """Process a prompt and store the result. This method features a semaphore to avoid running into RateLimitErrors. Return the Answers in a list."""
     # TODO: ask if stored
     _completion_prompt = copy.deepcopy(prompt.prompt)
+    valid_answers = []
     try:
         for attempt in tenacity.Retrying(
             stop=tenacity.stop_after_attempt(5),
@@ -60,25 +62,20 @@ async def process_and_store_prompt(
                 async with semaphore:
                     result = await ask_gpt(_completion_prompt)
                 # TODO: evaluate the choice to check the answers validity here
-                # TODO: store result
+                store_chatcompletion(result, prompt.meta["path"])
                 answers = result_into_answers(result, prompt)
                 for answer in answers:
                     if is_valid_answer(answer):
                         _completion_prompt["n"] -= 1
+                        answer.valid = True
+                        valid_answers.append(answer)
+                    store_answer(answer, prompt.meta["path"], result.id)
                 if _completion_prompt["n"] > 0:
                     raise NotDoneException("Not enough valid answers provided.")
     except tenacity.RetryError:
         pass
 
-    # TODO: a logging entry here would make sense
-    return [
-        Answer(
-            prompt.attributes,
-            answer=choice.message.content,
-        )
-        for choice in result.choices
-    ]
-
+    return valid_answers
 
 async def process_prompt_list(
     parameters: Parameters, prompts: List[Prompt]

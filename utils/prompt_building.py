@@ -10,12 +10,14 @@ from openai.types.chat.completion_create_params import (
 )
 
 from .models import Attribute, Parameters, Prompt, PromptAttributePair
+from .storage import store_prompt
 
 
 def build_prompts(parameters: Parameters) -> List[Prompt]:
     """Generate OpenAI Chat Completion prompts from parameters."""
     rendered_oneToN = [
         Prompt(
+            parameters=parameters,
             attributes=PromptAttributePair(
                 [source_attribute],
                 parameters.target_relation.attributes
@@ -34,6 +36,7 @@ def build_prompts(parameters: Parameters) -> List[Prompt]:
         )
         for source_attribute in parameters.source_relation.attributes
     ]
+    rendered_oneToN = [store_prompt(p) for p in rendered_oneToN]
 
     # prompt_NtoOne = [
     #    (parameters.source_relation.attributes, t)

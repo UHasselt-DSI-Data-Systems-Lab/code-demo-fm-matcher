@@ -1,5 +1,6 @@
-from dataclasses import dataclass, field, fields
+from dataclasses import asdict, dataclass, field, fields
 from enum import StrEnum
+import json
 from typing import Any, Dict, List, Optional, get_args, get_origin
 
 from openai.types.completion_create_params import CompletionCreateParams
@@ -25,6 +26,15 @@ class Vote(StrEnum):
     UNKNOWN = "unknown"
 
 
+class Dictable:
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> Any:
+        return generic_from_dict(cls, data)
+
+
 @dataclass
 class Attribute:
     name: str
@@ -32,7 +42,7 @@ class Attribute:
     included: bool = True
 
     def __hash__(self):
-        return hash(self.name, self.description)
+        return hash((self.name, self.description, self.included))
 
 
 @dataclass
@@ -41,14 +51,21 @@ class Relation:
     attributes: List[Attribute] = field(default_factory=list)
     description: Optional[str] = None
 
+    def __hash__(self):
+        attrs = tuple(self.attributes)
+        return hash((self.name, attrs, self.description))
+
 
 @dataclass
-class AttributePair:
+class AttributePair(Dictable):
     source: Attribute
     target: Attribute
 
     def __hash__(self):
         return hash((self.source, self.target))
+
+    def __str__(self) -> str:
+        return f"{self.source.name}->{self.target.name}"
 
 
 @dataclass
@@ -59,11 +76,14 @@ class Feedback:
 
 
 @dataclass
-class Parameters:
+class Parameters(Dictable):
     source_relation: Relation
     target_relation: Relation
     feedback: Feedback = None
     meta: Dict[str, str] = field(default_factory=dict)
+
+    def __hash__(self):
+        return hash((self.source_relation, self.target_relation))
 
 
 @dataclass
@@ -73,18 +93,45 @@ class Decision:
 
 
 @dataclass
-class ResultPair:
+class ResultPair(Dictable):
     attributes: AttributePair
     votes: List[Decision] = field(default_factory=list)
     score: float = 0.0
 
 
 @dataclass
-class Result:
-    name: str
+class Result(Dictable):
     parameters: Parameters
+    name: Optional[str] = None
     pairs: Dict[AttributePair, ResultPair] = field(default_factory=dict)
     meta: Dict[str, str] = field(default_factory=dict)
+
+    def __hash__(self):
+        return hash((self.name, self.parameters))
+
+    def to_json(self) -> str:
+        dct = {
+            "parameters": self.parameters.to_dict(),
+            "name": self.name,
+            "pairs": {
+                str(k): {"key": k.to_dict(), "value": v.to_dict()}
+                for k, v in self.pairs.items()
+            },
+            "meta": self.meta,
+        }
+        return json.dumps(dct)
+
+    def from_json(jsn: str) -> Any:
+        dct = json.loads(jsn)
+        return Result(
+            parameters=Parameters.from_dict(dct["parameters"]),
+            name=dct["name"] if "name" in dct else None,
+            pairs={
+                AttributePair.from_dict(v["key"]): ResultPair.from_dict(v["value"])
+                for v in dct["pairs"].values()
+            },
+            meta=dct["meta"],
+        )
 
 
 @dataclass
@@ -92,14 +139,27 @@ class PromptAttributePair:
     sources: List[Attribute] = field(default_factory=list)
     targets: List[Attribute] = field(default_factory=list)
 
+    def __hash__(self):
+        return hash((tuple(self.sources), tuple(self.targets)))
+
 
 @dataclass
-class Prompt:
+class Prompt(Dictable):
+    parameters: Parameters
     attributes: PromptAttributePair
     prompt: CompletionCreateParams
+    meta: Dict[str, str] = field(default_factory=dict)
+
+    def __hash__(self):
+        return hash((self.parameters, self.attributes))
 
 
 @dataclass
-class Answer:
+class Answer(Dictable):
     attributes: PromptAttributePair
     answer: str
+    valid: bool = False
+    meta: Dict[str, str] = field(default_factory=dict)
+
+    def __hash__(self):
+        return hash((self.attributes, self.answer))

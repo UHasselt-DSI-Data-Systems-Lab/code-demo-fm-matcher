@@ -2,7 +2,12 @@ from .models import Feedback, Parameters, Relation, Result
 from .prompt_sending import send_prompts
 from .prompt_building import build_prompts
 from .prompt_postprocessing import postprocess_answers
-from .storage import store_parameters, store_result
+from .storage import (
+    store_parameters,
+    store_result,
+    get_parameters_by_hash,
+    get_result_by_parameters,
+)
 
 
 def schema_match(
@@ -26,19 +31,26 @@ def schema_match(
     # method stub
     from .models import AttributePair, Decision, ResultPair, Vote
     import itertools
+
     # comment by Marcel: the part below is now fully functional for basic types of requests
-    # parameters = store_parameters(parameters)
-    # prompts = build_prompts(parameters)
-    # answers = send_prompts(parameters, prompts)
-    # result = postprocess_answers(answers, parameters)
-    # result = store_result(result)
-    # return result
+    stored_params = get_parameters_by_hash(hash(parameters))
+    if stored_params is not None:
+        return get_result_by_parameters(stored_params)
+    parameters = store_parameters(parameters)
+    prompts = build_prompts(parameters)
+    answers = send_prompts(parameters, prompts)
+    result = postprocess_answers(answers, parameters)
+    result = store_result(result)
+    return result
 
     attribute_pairs = [
         AttributePair(
             source=src,
             target=trgt,
-        ) for (src, trgt) in itertools.product(parameters.source_relation.attributes, parameters.target_relation.attributes)
+        )
+        for (src, trgt) in itertools.product(
+            parameters.source_relation.attributes, parameters.target_relation.attributes
+        )
     ]
     return Result(
         name="test",
