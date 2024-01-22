@@ -24,13 +24,16 @@ def create_load_screen(mss: ModelSessionState):
             st.rerun()
             #st.info(f"Successfully loaded relations **{session_state.source_relation.name}** and **{session_state.target_relation.name}**")
     
-    if mss.source_relation is not None:
-        st.subheader(f"Source Relation: {mss.source_relation.name}")
-        _display_relation(mss.source_relation)
-    
-    if mss.target_relation is not None:
-        st.subheader(f"Target Relation: {mss.target_relation.name}")
-        _display_relation(mss.target_relation)
+    col1, col2 = st.columns(2, gap="medium")
+    with col1:
+        if mss.source_relation is not None:
+            st.subheader(f"Source Relation: {mss.source_relation.name}")
+            _display_relation(mss.source_relation, names_fixed=mss.input_fixed)
+
+    with col2:    
+        if mss.target_relation is not None:
+            st.subheader(f"Target Relation: {mss.target_relation.name}")
+            _display_relation(mss.target_relation, names_fixed=mss.input_fixed)
 
     if mss.source_relation is not None and mss.target_relation is not None:
         if st.button("Run Schema Matching"):
@@ -72,13 +75,14 @@ def _display_relation(relation: Relation, names_fixed: bool = False):
         if attr_key_name not in st.session_state:
             st.session_state[attr_key_name] = attr.name
         st.text_input(f"Attribute {i+1}", key=attr_key_name, on_change=on_change_attrname, args=(attr, attr_key_name), disabled=names_fixed)
-        # Attribute description
-        attr_key_descr = f"{relation.name}.Attr{i}.description"
-        if attr_key_descr not in st.session_state:
-            st.session_state[attr_key_descr] = attr.description
-        st.text_area("description", key=attr_key_descr, on_change=on_change_attrdescr, args=(attr, attr_key_descr), label_visibility="collapsed")
-        # Attribute included checkbox
-        attr_key_incl = f"{relation.name}.Attr{i}.included"
-        if attr_key_incl not in st.session_state:
-            st.session_state[attr_key_incl] = attr.included
-        st.checkbox("Include", key=attr_key_incl, on_change=on_change_attrincl, args=(attr, attr_key_incl), disabled=names_fixed)
+        with st.expander("details"):
+            # Attribute description
+            attr_key_descr = f"{relation.name}.Attr{i}.description"
+            if attr_key_descr not in st.session_state:
+                st.session_state[attr_key_descr] = attr.description
+            st.text_area("description", key=attr_key_descr, on_change=on_change_attrdescr, args=(attr, attr_key_descr), label_visibility="collapsed")
+            # Attribute included checkbox
+            attr_key_incl = f"{relation.name}.Attr{i}.included"
+            if attr_key_incl not in st.session_state:
+                st.session_state[attr_key_incl] = attr.included
+            st.checkbox("Include", key=attr_key_incl, on_change=on_change_attrincl, args=(attr, attr_key_incl), disabled=names_fixed)

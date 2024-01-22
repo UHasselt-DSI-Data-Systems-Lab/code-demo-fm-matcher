@@ -4,6 +4,8 @@ from utils.screen_load import create_load_screen
 from utils.screen_visualize import create_visualize_screen
 from utils.model_session_state import ModelSessionState
 
+st.set_page_config(layout="wide")
+
 st.title("Schema Matching for Health Data using Foundation Models")
 
 # Load session state, creating a new object if none exists
