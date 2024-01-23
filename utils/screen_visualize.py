@@ -1,8 +1,9 @@
+from typing import Any
 import streamlit as st
 from st_cytoscape import cytoscape
 from streamlit_extras.stylable_container import stylable_container
 from utils.model_session_state import ModelSessionState
-from utils.models import Attribute, Vote
+from utils.models import Attribute, AttributePair, Result, Vote
 
 COLOR_YES = "#4bff4b"
 COLOR_NO = "#ff4b4b"
@@ -57,7 +58,7 @@ def create_visualize_screen(mss: ModelSessionState):
     left_attr_uids = sorted(left_attr_lookup.keys())
     right_attr_uids = sorted(right_attr_lookup.keys())
 
-    elements = [
+    elements: list[dict[str, Any]] = [
         {"data": {"id": str(attr.uid), "name": attr.name}}
         for attr in result.parameters.source_relation.attributes
     ]
@@ -168,11 +169,34 @@ def create_visualize_screen(mss: ModelSessionState):
 
     max_num_attrs = max(len(left_attr_uids), len(right_attr_uids))
     selected = cytoscape(elements, stylesheet, layout=layout, key="graph", height=f"{max_num_attrs*70}px", user_zooming_enabled=False, user_panning_enabled=False)
-
+    
     # store selected nodes in session state
     mss.selected_attrs = [int(node_id) for node_id in selected["nodes"]]
 
-    st.write(selected)
+    selected_source = [attr for attr in result.parameters.source_relation.attributes if attr.uid in mss.selected_attrs]
+    selected_target = [attr for attr in result.parameters.target_relation.attributes if attr.uid in mss.selected_attrs]
+
+    # If exactly 1 source and target attribute selected: show more info on this pair
+    if len(selected_source) == 1 and len(selected_target) == 1:
+        attr_pair = AttributePair(selected_source[0], selected_target[0])
+        _voting_details(result, attr_pair)
+    else:
+        st.info("Select an attribute pair in the graph to see voting details for the selected pair")
+
+
+def _voting_details(result: Result, attr_pair: AttributePair):
+    """Display the voting details for a given attribute pair."""
+    st.header(f"Voting details between {result.parameters.source_relation.name}.{attr_pair.source.name} and {result.parameters.target_relation.name}.{attr_pair.target.name}")
+
+    if attr_pair not in result.pairs:
+        st.error("Selected attribute pair not found in result. This is most likely a bug.")
+        return
+
+    # Show votes
+    votes = result.pairs[attr_pair].votes
+    for i, vote in enumerate(votes):
+        with st.expander(f"Vote {i+1}: {vote.vote.name}"):
+            st.text(vote.explanation)
 
 
 def toy_example():

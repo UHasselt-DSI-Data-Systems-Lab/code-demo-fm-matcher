@@ -29,8 +29,8 @@ class Vote(StrEnum):
 class Attribute:
     name: str
     description: Optional[str] = None
-    included: bool = True
-    uid: Optional[int] = None
+    included: bool = field(default=True, compare=False)
+    uid: Optional[int] = field(default=None, compare=False)
 
     def __hash__(self):
         return hash((self.name, self.description))
