@@ -14,11 +14,11 @@ COLOR_NO_2 = "#692424"
 COLOR_UNKNOWN_2 = "#4a4a4a"
 
 def create_visualize_screen(mss: ModelSessionState):
-    st.header("Results")
-
     if mss.result is None:
-        st.warning("No results to visualize yet")
+        #st.warning("No results to visualize yet")
         return
+    
+    st.header("Results")
 
     result = mss.result
     compare_to = mss.compare_to

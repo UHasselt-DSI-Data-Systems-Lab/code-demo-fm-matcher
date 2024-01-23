@@ -1,11 +1,8 @@
 import json
-import time
-from copy import deepcopy
 from typing import Optional
 import streamlit as st
 from utils.model_session_state import ModelSessionState
-from utils.models import Relation, Attribute, Parameters, Result, generic_from_dict
-from utils.backend import schema_match
+from utils.models import Relation, Attribute, Result, generic_from_dict
 
 def create_load_screen(mss: ModelSessionState):
     
@@ -43,23 +40,6 @@ def create_load_screen(mss: ModelSessionState):
             st.subheader(f"Target Relation: {mss.target_relation.name}")
             _display_relation(mss.target_relation, names_fixed=mss.input_fixed, result=mss.result, compare_to=mss.compare_to)
 
-    if mss.source_relation is not None and mss.target_relation is not None:
-        if st.button("Run Schema Matching"):
-            mss.input_fixed = True
-            with st.spinner("Matching schemas..."):
-                # create a deepcopy of all parameters to avoid changing params (e.g. descriptions) of older experiments in the visualization when changing descriptions in the input
-                params = Parameters(
-                    source_relation=deepcopy(mss.source_relation),
-                    target_relation=deepcopy(mss.target_relation),
-                    feedback=None, #TODO
-                )
-                result = schema_match(params)
-                st.info("Debug info: manual sleep time for testing purposes!")
-                time.sleep(1)
-                # Change the name of the result to something unique
-                result.name = f"Experiment {mss.get_next_experiment_id()}"
-                mss.all_results.append(result)
-            st.rerun()
 
 
 def _display_relation(relation: Relation, names_fixed: bool = False, result: Optional[Result] = None, compare_to: Optional[Result] = None):
