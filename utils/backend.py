@@ -36,12 +36,12 @@ def schema_match(
     stored_params = get_parameters_by_hash(hash(parameters))
     if stored_params is not None:
         return get_result_by_parameters(stored_params)
-    parameters = store_parameters(parameters)
-    prompts = build_prompts(parameters)
-    answers = send_prompts(parameters, prompts)
-    result = postprocess_answers(answers, parameters)
-    result = store_result(result)
-    return result
+    # parameters = store_parameters(parameters)
+    # prompts = build_prompts(parameters)
+    # answers = send_prompts(parameters, prompts)
+    # result = postprocess_answers(answers, parameters)
+    # result = store_result(result)
+    # return result
 
     attribute_pairs = [
         AttributePair(
@@ -52,6 +52,8 @@ def schema_match(
             parameters.source_relation.attributes, parameters.target_relation.attributes
         )
     ]
+
+    import random
     return Result(
         name="test",
         parameters=parameters,
@@ -59,9 +61,9 @@ def schema_match(
             ap: ResultPair(
                 ap,
                 votes=[
-                    Decision(vote=Vote.NO, explanation="Testing"),
-                    Decision(vote=Vote.NO, explanation="Testing"),
-                    Decision(vote=Vote.NO, explanation="Testing"),
+                    Decision(vote=rs, explanation="Testing") for rs in random.choices([Vote.YES, Vote.NO, Vote.UNKNOWN], weights=[1, 5, 2], k=3)
+                    #Decision(vote=Vote.NO, explanation="Testing"),
+                   # Decision(vote=Vote.NO, explanation="Testing"),
                 ],
                 score=0.0,
             )
