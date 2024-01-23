@@ -3,6 +3,7 @@ import time
 import streamlit as st
 from utils.backend import schema_match
 from utils.models import Parameters
+from utils.screen_feedback import create_feedback_screen
 
 from utils.screen_load import create_load_screen
 from utils.screen_visualize import create_visualize_screen
@@ -30,7 +31,7 @@ def _submit_button(mss: ModelSessionState):
                     params = Parameters(
                         source_relation=deepcopy(mss.source_relation),
                         target_relation=deepcopy(mss.target_relation),
-                        feedback=None, #TODO
+                        feedback=deepcopy(mss.feedback)
                     )
                     result = schema_match(params)
                     st.info("Debug info: manual sleep time for testing purposes!")
@@ -73,6 +74,8 @@ create_load_screen(session_state_obj)
 
 # Data visualization part
 create_visualize_screen(session_state_obj)
+
+create_feedback_screen(session_state_obj)
 
 # (re)submit button
 _submit_button(session_state_obj)

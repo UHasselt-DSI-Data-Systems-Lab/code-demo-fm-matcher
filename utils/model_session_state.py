@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from typing import Optional
-from utils.models import Relation, Result
+from utils.models import Feedback, Relation, Result
 
 @dataclass
 class ModelSessionState:
@@ -13,6 +13,7 @@ class ModelSessionState:
     result: Optional[Result] = None
     compare_to: Optional[Result] = None
     all_results: list[Result] = field(default_factory=list)
+    feedback: Optional[Feedback] = None
     uid_counter: int = 0 # used for generating unique ids for attributes
     experiment_counter: int = 0 # used for generating unique ids for experiments
     selected_attrs: list[int] = field(default_factory=list)

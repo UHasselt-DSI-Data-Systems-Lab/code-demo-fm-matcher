@@ -104,7 +104,7 @@ def create_visualize_screen(mss: ModelSessionState):
             "selector": "node",
             "style": {
                 "label": "data(name)",
-                "width": 200,
+                "width": 230,
                 "height": 40,
                 "shape": "rectangle",
                 "text-valign": "center",
