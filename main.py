@@ -19,10 +19,11 @@ if session_state_obj is None:
 
 def _submit_button(mss: ModelSessionState):
     if mss.source_relation is not None and mss.target_relation is not None:
+            st.divider()
             button_text = "Run Schema Matching"
             if len(mss.all_results) > 0:
                 button_text = "Run Schema Matching Again"
-            if st.button("Run Schema Matching"):
+            if st.button(button_text):
                 mss.input_fixed = True
                 with st.spinner("Matching schemas..."):
                     # create a deepcopy of all parameters to avoid changing params (e.g. descriptions) of older experiments in the visualization when changing descriptions in the input
