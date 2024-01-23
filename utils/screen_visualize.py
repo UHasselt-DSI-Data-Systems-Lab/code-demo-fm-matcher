@@ -82,8 +82,6 @@ def create_visualize_screen(mss: ModelSessionState):
         num_yes = len([decision for decision in result_pair.votes if decision.vote == Vote.YES])
         num_no = len([decision for decision in result_pair.votes if decision.vote == Vote.NO])
         num_unknown = len([decision for decision in result_pair.votes if decision.vote == Vote.UNKNOWN])
-        num_yes += 1
-        num_unknown += 1
         if show_yes:
             elements.append(
                 {
@@ -186,7 +184,7 @@ def create_visualize_screen(mss: ModelSessionState):
 
 def _voting_details(result: Result, attr_pair: AttributePair):
     """Display the voting details for a given attribute pair."""
-    st.header(f"Voting details between {result.parameters.source_relation.name}.{attr_pair.source.name} and {result.parameters.target_relation.name}.{attr_pair.target.name}")
+    st.header(f"Voting details between `{result.parameters.source_relation.name}.{attr_pair.source.name}` and `{result.parameters.target_relation.name}.{attr_pair.target.name}`")
 
     if attr_pair not in result.pairs:
         st.error("Selected attribute pair not found in result. This is most likely a bug.")
