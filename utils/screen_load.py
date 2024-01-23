@@ -1,8 +1,10 @@
 import json
 import time
+from copy import deepcopy
+from typing import Optional
 import streamlit as st
 from utils.model_session_state import ModelSessionState
-from utils.models import Relation, Attribute, Parameters, generic_from_dict
+from utils.models import Relation, Attribute, Parameters, Result, generic_from_dict
 from utils.backend import schema_match
 
 def create_load_screen(mss: ModelSessionState):
@@ -34,28 +36,33 @@ def create_load_screen(mss: ModelSessionState):
     with col1:
         if mss.source_relation is not None:
             st.subheader(f"Source Relation: {mss.source_relation.name}")
-            _display_relation(mss.source_relation, names_fixed=mss.input_fixed)
+            _display_relation(mss.source_relation, names_fixed=mss.input_fixed, result=mss.result, compare_to=mss.compare_to)
 
-    with col2:    
+    with col2:
         if mss.target_relation is not None:
             st.subheader(f"Target Relation: {mss.target_relation.name}")
-            _display_relation(mss.target_relation, names_fixed=mss.input_fixed)
+            _display_relation(mss.target_relation, names_fixed=mss.input_fixed, result=mss.result, compare_to=mss.compare_to)
 
     if mss.source_relation is not None and mss.target_relation is not None:
         if st.button("Run Schema Matching"):
             mss.input_fixed = True
             with st.spinner("Matching schemas..."):
+                # create a deepcopy of all parameters to avoid changing params (e.g. descriptions) of older experiments in the visualization when changing descriptions in the input
                 params = Parameters(
-                    source_relation=mss.source_relation,
-                    target_relation=mss.target_relation,
+                    source_relation=deepcopy(mss.source_relation),
+                    target_relation=deepcopy(mss.target_relation),
+                    feedback=None, #TODO
                 )
-                mss.result = schema_match(params)
+                result = schema_match(params)
                 st.info("Debug info: manual sleep time for testing purposes!")
                 time.sleep(1)
+                # Change the name of the result to something unique
+                result.name = f"Experiment {mss.get_next_experiment_id()}"
+                mss.all_results.append(result)
             st.rerun()
 
 
-def _display_relation(relation: Relation, names_fixed: bool = False):
+def _display_relation(relation: Relation, names_fixed: bool = False, result: Optional[Result] = None, compare_to: Optional[Result] = None):
     """Display a relation and allow editing."""
     # Callback functions for when a field is changed.
     # Note that values shown in text fields are internally stored in the streamlit session state under the corresponding widget key.
@@ -69,11 +76,24 @@ def _display_relation(relation: Relation, names_fixed: bool = False):
         attr.included = st.session_state[session_key]
 
     # field for relation description
-    rel_key_descr = f"{relation.name}.description"
-    if rel_key_descr not in st.session_state:
-        st.session_state[rel_key_descr] = relation.description
-    st.text_area("Relation description", key=rel_key_descr, on_change=on_change_reldescr, args=(relation, rel_key_descr))
-    
+    with st.expander("Relation details"):
+        # description
+        rel_key_descr = f"{relation.name}.description"
+        if rel_key_descr not in st.session_state:
+            st.session_state[rel_key_descr] = relation.description
+        st.text_area("Relation description", key=rel_key_descr, on_change=on_change_reldescr, args=(relation, rel_key_descr))
+        # versions used in previous experiments:
+        if result is not None:
+            if relation.name == result.parameters.source_relation.name:
+                st.text_area(f"Description used in {result.name}", value=result.parameters.source_relation.description, disabled=True, key=f"{relation.name}.description.result")
+            elif relation.name == result.parameters.target_relation.name:
+                st.text_area(f"Description used in {result.name}", value=result.parameters.target_relation.description, disabled=True, key=f"{relation.name}.description.result")
+        if compare_to is not None:
+            if relation.name == compare_to.parameters.source_relation.name:
+                st.text_area(f"Description used in {compare_to.name}", value=compare_to.parameters.source_relation.description, disabled=True, key=f"{relation.name}.description.compare_to")
+            elif relation.name == compare_to.parameters.target_relation.name:
+                st.text_area(f"Description used in {compare_to.name}", value=compare_to.parameters.target_relation.description, disabled=True, key=f"{relation.name}.description.compare_to")
+        
     # All atributes
     for i, attr in enumerate(relation.attributes):
         # Attribute name
@@ -92,3 +112,22 @@ def _display_relation(relation: Relation, names_fixed: bool = False):
             if attr_key_incl not in st.session_state:
                 st.session_state[attr_key_incl] = attr.included
             st.checkbox("Include", key=attr_key_incl, on_change=on_change_attrincl, args=(attr, attr_key_incl), disabled=names_fixed)
+
+            # show version of description from results and compare-to if available
+            if result is not None and attr.uid is not None:
+                attribute = _find_attribute(result, attr.uid)
+                st.text_area(f"Description used in {result.name}", value=attribute.description, disabled=True, key=f"{relation.name}.Attr{attribute.uid}.description.result")
+            if compare_to is not None and attr.uid is not None:
+                attribute = _find_attribute(compare_to, attr.uid)
+                st.text_area(f"Description used in {compare_to.name}", value=attribute.description, disabled=True, key=f"{relation.name}.Attr{attribute.uid}.description.compare_to")
+
+
+def _find_attribute(result: Result, uid: int) -> Attribute:
+    """find the attribute in the result, based on the uid"""
+    for attr in result.parameters.source_relation.attributes:
+        if attr.uid == uid:
+            return attr
+    for attr in result.parameters.target_relation.attributes:
+        if attr.uid == uid:
+            return attr
+    raise ValueError(f"Attribute with uid {uid} not found in result")

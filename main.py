@@ -23,6 +23,23 @@ with st.sidebar:
         # Create a new object to store session state
         st.session_state["session_state"] = session_state_obj = ModelSessionState()
         st.rerun()
+    
+    # Select result version(s) to visualize
+    num_exps = len(session_state_obj.all_results)
+    if num_exps >= 1:
+        selected = st.selectbox("Selected result", options=reversed([result.name for result in session_state_obj.all_results]), index=0)
+        if selected is not None:
+            session_state_obj.result = next(result for result in session_state_obj.all_results if result.name == selected)
+        else:
+            session_state_obj.result = None
+            session_state_obj.compare_to = None
+        # only show compare-to option if at least 2 experiments exist. Note that this can be None to disable comparison
+        if selected is not None and num_exps >= 2:
+            compare_to = st.selectbox("Compare to", options=reversed([result.name for result in session_state_obj.all_results]), index=None)
+            if compare_to is not None:
+                session_state_obj.compare_to = next(result for result in session_state_obj.all_results if result.name == compare_to)
+            else:
+                session_state_obj.compare_to = None
 
 create_load_screen(session_state_obj)
 
