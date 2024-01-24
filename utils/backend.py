@@ -1,3 +1,4 @@
+from .config import config
 from .models import Feedback, Parameters, Relation, Result
 from .prompt_sending import send_prompts
 from .prompt_building import build_prompts
@@ -28,45 +29,43 @@ def schema_match(
                 target_relation=target_relation,
                 feedback=feedback,
             )
-    # method stub
-    from .models import AttributePair, Decision, ResultPair, Vote
-    import itertools
 
-    # comment by Marcel: the part below is now fully functional for basic types of requests
+    if config["DEBUG_MODE"]:
+        # method stub
+        from .models import AttributePair, Decision, ResultPair, Vote
+        import itertools
+        import random
+        attribute_pairs = [
+            AttributePair(
+                source=src,
+                target=trgt,
+            )
+            for (src, trgt) in itertools.product(
+                parameters.source_relation.attributes, parameters.target_relation.attributes
+            )
+        ]
+        return Result(
+            name="test",
+            parameters=parameters,
+            pairs={
+                ap: ResultPair(
+                    ap,
+                    votes=[
+                        Decision(vote=rs, explanation="Testing") for rs in random.choices([Vote.YES, Vote.NO, Vote.UNKNOWN], weights=[1, 5, 2], k=3)
+                    ],
+                    score=0.0,
+                )
+                for ap in attribute_pairs
+            },
+        )
+
     stored_params = get_parameters_by_hash(hash(parameters))
     if stored_params is not None:
         return get_result_by_parameters(stored_params)
-    # parameters = store_parameters(parameters)
-    # prompts = build_prompts(parameters)
-    # answers = send_prompts(parameters, prompts)
-    # result = postprocess_answers(answers, parameters)
-    # result = store_result(result)
-    # return result
+    parameters = store_parameters(parameters)
+    prompts = build_prompts(parameters)
+    answers = send_prompts(parameters, prompts)
+    result = postprocess_answers(answers, parameters)
+    result = store_result(result)
+    return result
 
-    attribute_pairs = [
-        AttributePair(
-            source=src,
-            target=trgt,
-        )
-        for (src, trgt) in itertools.product(
-            parameters.source_relation.attributes, parameters.target_relation.attributes
-        )
-    ]
-
-    import random
-    return Result(
-        name="test",
-        parameters=parameters,
-        pairs={
-            ap: ResultPair(
-                ap,
-                votes=[
-                    Decision(vote=rs, explanation="Testing") for rs in random.choices([Vote.YES, Vote.NO, Vote.UNKNOWN], weights=[1, 5, 2], k=3)
-                    #Decision(vote=Vote.NO, explanation="Testing"),
-                   # Decision(vote=Vote.NO, explanation="Testing"),
-                ],
-                score=0.0,
-            )
-            for ap in attribute_pairs
-        },
-    )

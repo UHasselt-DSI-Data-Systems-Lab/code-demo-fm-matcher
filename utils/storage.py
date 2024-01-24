@@ -7,11 +7,12 @@ from typing import Optional
 
 from openai.types.chat import ChatCompletion
 
+from .config import config
 from .models import Answer, Parameters, Prompt, Result
 
 
 @contextmanager
-def get_connection(db_path: str = "database.sqlite3") -> sqlite3.Connection:
+def get_connection(db_path: str) -> sqlite3.Connection:
     """Returns a connection to the database, making sure that the database is created first. The connections is cached to avoid multiple checks."""
     if not _initialize_database(db_path):
         raise RuntimeError("The database could not be initialized.")
@@ -106,7 +107,7 @@ def _id_from_path(path: str) -> int:
 def store_parameters(parameters: Parameters) -> Parameters:
     """Stores the parameters. It will add a path to the Parameter's meta information that is needed to retrieve the parameters later."""
     now = datetime.datetime.now()
-    db_path = "database.sqlite3"  # TODO: get this from settings somehow
+    db_path = config["SQLITE_PATH"]
     with get_connection(db_path) as con:
         result = con.execute(
             "INSERT INTO parameters VALUES (?, ?, ?, ?) RETURNING id;",
@@ -120,7 +121,7 @@ def store_parameters(parameters: Parameters) -> Parameters:
 def store_result(result: Result) -> Result:
     """Stores a result. It will add a path to the Result's meta information that is needed to retrieve the result later."""
     now = datetime.datetime.now()
-    db_path = "database.sqlite3"  # TODO: get this from settings somehow
+    db_path = config["SQLITE_PATH"]
     with get_connection(db_path) as con:
         sql_result = con.execute(
             "INSERT INTO results VALUES (?, ?, ?, ?, ?, ?) RETURNING id;",
@@ -140,7 +141,7 @@ def store_result(result: Result) -> Result:
 
 def store_prompt(prompt: Prompt) -> Prompt:
     """Stores a prompt. It will add a path to the Prompt's meta information that is needed to retrieve the prompt later."""
-    db_path = "database.sqlite3"  # TODO: get this from settings somehow
+    db_path = config["SQLITE_PATH"]
     with get_connection(db_path) as con:
         result = con.execute(
             "INSERT INTO prompts VALUES (?, ?, ?, ?) RETURNING id;",
@@ -160,7 +161,7 @@ def store_chatcompletion(
     chatcompletion: ChatCompletion, prompt_path: str
 ) -> ChatCompletion:
     """Stores a ChatCompletion as received from the OpenAI API."""
-    db_path = "database.sqlite3"  # TODO: get this from settings somehow
+    db_path = config["SQLITE_PATH"]
     with get_connection(db_path) as con:
         con.execute(
             "INSERT INTO chatcompletions VALUES (?, ?, ?);",
@@ -177,7 +178,7 @@ def store_answer(
     answer: Answer, prompt_path: str, chatcompletion_id: Optional[str]
 ) -> Answer:
     """Stores an answer. It will add a path to the Answer's meta information that is needed to retrieve the answer later."""
-    db_path = "database.sqlite3"  # TODO: get this from settings somehow
+    db_path = config["SQLITE_PATH"]
     with get_connection(db_path) as con:
         con.execute(
             "INSERT INTO answers VALUES (?, ?, ?, ?);",
@@ -193,7 +194,7 @@ def store_answer(
 
 def get_parameters_by_hash(the_hash: str) -> Optional[Parameters]:
     """Returns the parameters with the given hash. If the parameters are not stored, returns None."""
-    db_path = "database.sqlite3"  # TODO: get this from settings somehow
+    db_path = config["SQLITE_PATH"]
     with get_connection(db_path) as con:
         result = con.execute(
             "SELECT id, datetime, data FROM parameters WHERE hash=?;", (the_hash,)
@@ -207,7 +208,7 @@ def get_parameters_by_hash(the_hash: str) -> Optional[Parameters]:
 
 def get_result_by_parameters(parameters: Parameters) -> Optional[Result]:
     """Returns the result for the given parameters. If the result is not stored, returns None."""
-    db_path = "database.sqlite3"  # TODO: get this from settings somehow
+    db_path = config["SQLITE_PATH"]
     with get_connection(db_path) as con:
         sql_result = con.execute(
             "SELECT id, datetime, data FROM results WHERE parameters_id=?;",

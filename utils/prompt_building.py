@@ -9,6 +9,7 @@ from openai.types.chat.completion_create_params import (
     CompletionCreateParamsNonStreaming,
 )
 
+from .config import config
 from .models import Attribute, Parameters, Prompt, PromptAttributePair
 from .storage import store_prompt
 
@@ -23,14 +24,14 @@ def build_prompts(parameters: Parameters) -> List[Prompt]:
                 parameters.target_relation.attributes
             ),
             prompt=CompletionCreateParamsNonStreaming(
-                {  # TODO: check where and how to ask these parameters from settings
-                    "model": "gpt-3.5-turbo-1106",
+                {
+                    "model": config["OPENAI_MODEL"],
                     "messages": render_prompt(
                         (source_attribute, parameters.target_relation.attributes),
                         parameters,
                         "oneToN",
                     ),
-                    "n": 3,
+                    "n": config["OPENAI_N"],
                 }
             ),
         )

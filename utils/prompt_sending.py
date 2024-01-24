@@ -7,6 +7,7 @@ from openai import AsyncOpenAI, APITimeoutError, InternalServerError, RateLimitE
 from openai.types.chat import ChatCompletion, CompletionCreateParams
 import tenacity
 
+from .config import config
 from .errors import NotDoneException
 from .models import Answer, Parameters, Prompt
 from .storage import store_answer, store_chatcompletion
@@ -81,7 +82,7 @@ async def process_prompt_list(
     parameters: Parameters, prompts: List[Prompt]
 ) -> List[Answer]:
     """Process a list of prompts. Returns the chained lists of all answers provided from the LLM."""
-    semaphore = asyncio.Semaphore(5)  # TODO: get this from the settings
+    semaphore = asyncio.Semaphore(config["PARALLEL_OPENAI_REQUESTS"])
     tasks = []
     async with asyncio.TaskGroup() as tg:
         for prompt in prompts:
