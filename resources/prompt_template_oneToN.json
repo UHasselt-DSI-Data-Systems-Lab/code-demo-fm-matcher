@@ -16,6 +16,10 @@
     "content": "Attribute name: '{{target_attribute.name}}'\nAttribute description: '{{target_attribute.description}}'"
   },
   {
+	"role": "user",
+	"content": "{% if feedback.general is not none %}Take the following additional information into account: {{ feedback.general }}{% endif %}"
+  },
+  {
     "role": "user",
     "content": "Explain which of the target attributes semantically match to '{{source_attribute.name}}' from '{{source_relation.name}}' of the source schema. Lets work this out step by step to make sure we get it correct. After your explanation, give a final decision JSON-formatted like this: `{ \"yes\": [], \"no\": [] }`. Under each of the following keys, list all target attributes of '{{target_relation.name}}' that apply: yes - if there is an inversible function that maps all values of the source attribute to the values of the target attribute; no - if there is no such function. Do not mention an attribute if there is not enough information to decide."
   }

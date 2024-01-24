@@ -13,7 +13,7 @@ from .models import (
 from .prompt_sending import extract_json
 
 
-def postprocess_answers(answers: List[Answer], parameters: Parameters) -> Result:
+def postprocess_answers(parameters: Parameters, answers: List[Answer]) -> Result:
     """Postprocess all answers into structured Results. At this point, we will assume that the answers are validated."""
     result = _generate_empty_result(parameters)
     for answer in answers:

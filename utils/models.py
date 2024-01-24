@@ -71,20 +71,23 @@ class AttributePair(Dictable):
 
 @dataclass
 class Feedback:
-    general: Optional[str]
+    general: Optional[str] = None
     per_attribute: Dict[Attribute, str] = field(default_factory=dict)
     per_attribute_pair: Dict[AttributePair, str] = field(default_factory=dict)
+
+    def __hash__(self):
+        return hash((self.general, tuple(self.per_attribute.keys()), tuple(self.per_attribute.values()), tuple(self.per_attribute_pair.keys()), tuple(self.per_attribute_pair.values())))
 
 
 @dataclass
 class Parameters(Dictable):
     source_relation: Relation
     target_relation: Relation
-    feedback: Feedback = None
+    feedback: Feedback = Feedback()
     meta: Dict[str, str] = field(default_factory=dict)
 
     def __hash__(self):
-        return hash((self.source_relation, self.target_relation))
+        return hash((self.source_relation, self.target_relation, self.feedback))
 
 
 @dataclass

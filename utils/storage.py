@@ -3,7 +3,7 @@ import datetime
 import functools
 import json
 import sqlite3
-from typing import Optional
+from typing import List, Optional
 
 from openai.types.chat import ChatCompletion
 
@@ -84,12 +84,18 @@ def _initialize_database(db_path: str) -> bool:
             "answers": [
                 "chatcompletions_id TEXT REFERENCES chatcompletions (openai_id)",
                 "prompt_id INTEGER NOT NULL REFERENCES prompts (id)",
-                "answer TEXT NOT NULL",
                 "valid INTEGER NOT NULL",
+                "hash TEXT NOT NULL",
+                "data JSON NOT NULL",
             ],
         }
         for table, columns in create_stmt.items():
-            con.execute(f"CREATE TABLE {table} ({', '.join(columns)});")
+            try:
+                print(f"CREATE TABLE {table} ({', '.join(columns)});")
+                con.execute(f"CREATE TABLE {table} ({', '.join(columns)});")
+            except sqlite3.Error as err:
+                # TODO: do proper logging here
+                print(err)
     con.close()
     return True
 
@@ -106,6 +112,9 @@ def _id_from_path(path: str) -> int:
 
 def store_parameters(parameters: Parameters) -> Parameters:
     """Stores the parameters. It will add a path to the Parameter's meta information that is needed to retrieve the parameters later."""
+    if config["SQLITE_PATH"] is None:
+        parameters.meta["path"] = _to_path("nostore", "parameters", "1")
+        return parameters
     now = datetime.datetime.now()
     db_path = config["SQLITE_PATH"]
     with get_connection(db_path) as con:
@@ -120,6 +129,9 @@ def store_parameters(parameters: Parameters) -> Parameters:
 
 def store_result(result: Result) -> Result:
     """Stores a result. It will add a path to the Result's meta information that is needed to retrieve the result later."""
+    if config["SQLITE_PATH"] is None:
+        result.meta["path"] = _to_path("nostore", "results", "1")
+        return result
     now = datetime.datetime.now()
     db_path = config["SQLITE_PATH"]
     with get_connection(db_path) as con:
@@ -141,6 +153,9 @@ def store_result(result: Result) -> Result:
 
 def store_prompt(prompt: Prompt) -> Prompt:
     """Stores a prompt. It will add a path to the Prompt's meta information that is needed to retrieve the prompt later."""
+    if config["SQLITE_PATH"] is None:
+        prompt.meta["path"] = _to_path("nostore", "prompts", "1")
+        return prompt
     db_path = config["SQLITE_PATH"]
     with get_connection(db_path) as con:
         result = con.execute(
@@ -161,6 +176,8 @@ def store_chatcompletion(
     chatcompletion: ChatCompletion, prompt_path: str
 ) -> ChatCompletion:
     """Stores a ChatCompletion as received from the OpenAI API."""
+    if config["SQLITE_PATH"] is None:
+        return chatcompletion
     db_path = config["SQLITE_PATH"]
     with get_connection(db_path) as con:
         con.execute(
@@ -178,14 +195,18 @@ def store_answer(
     answer: Answer, prompt_path: str, chatcompletion_id: Optional[str]
 ) -> Answer:
     """Stores an answer. It will add a path to the Answer's meta information that is needed to retrieve the answer later."""
+    if config["SQLITE_PATH"] is None:
+        answer.meta["path"] = _to_path("nostore", "answers", "1")
+        return answer
     db_path = config["SQLITE_PATH"]
     with get_connection(db_path) as con:
         con.execute(
-            "INSERT INTO answers VALUES (?, ?, ?, ?);",
+            "INSERT INTO answers VALUES (?, ?, ?, ?, ?);",
             (
                 chatcompletion_id,
                 _id_from_path(prompt_path),
-                answer.answer,
+                hash(answer),
+                json.dumps(answer.to_dict()),
                 answer.valid,
             ),
         )
@@ -194,6 +215,8 @@ def store_answer(
 
 def get_parameters_by_hash(the_hash: str) -> Optional[Parameters]:
     """Returns the parameters with the given hash. If the parameters are not stored, returns None."""
+    if config["SQLITE_PATH"] is None:
+        return None
     db_path = config["SQLITE_PATH"]
     with get_connection(db_path) as con:
         result = con.execute(
@@ -208,6 +231,8 @@ def get_parameters_by_hash(the_hash: str) -> Optional[Parameters]:
 
 def get_result_by_parameters(parameters: Parameters) -> Optional[Result]:
     """Returns the result for the given parameters. If the result is not stored, returns None."""
+    if config["SQLITE_PATH"] is None:
+        return None
     db_path = config["SQLITE_PATH"]
     with get_connection(db_path) as con:
         sql_result = con.execute(
@@ -219,3 +244,24 @@ def get_result_by_parameters(parameters: Parameters) -> Optional[Result]:
         result = Result.from_json(sql_result[2])
         result.meta["path"] = _to_path(db_path, "results", sql_result[0])
     return result
+
+
+def get_answers_by_prompt(prompt: Prompt, filter_valid: bool = False) -> List[Answer]:
+    """Returns all answers for the given prompt. Returns an empty list if none are stored."""
+    if config["SQLITE_PATH"] is None:
+        return []
+    db_path = config["SQLITE_PATH"]
+    answers = []
+    with get_connection(db_path) as con:
+        if filter_valid:
+            sql_qry = "SELECT data FROM answers WHERE prompt_id=? AND valid=1;"
+        else:
+            sql_qry = "SELECT data FROM answers WHERE prompt_id=?;"
+        sql_result = con.execute(
+            sql_qry,
+            (_id_from_path(prompt.meta["path"]),)
+        ).fetchall()
+        answers = [
+            Answer.from_json(res[0]) for res in sql_result
+        ]
+    return answers

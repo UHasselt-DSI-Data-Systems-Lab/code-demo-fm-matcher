@@ -30,7 +30,7 @@ def schema_match(
                 feedback=feedback,
             )
 
-    if config["DEBUG_MODE"]:
+    if not config["QUERY_OPENAI"]:
         # method stub
         from .models import AttributePair, Decision, ResultPair, Vote
         import itertools
@@ -60,12 +60,16 @@ def schema_match(
         )
 
     stored_params = get_parameters_by_hash(hash(parameters))
-    if stored_params is not None:
-        return get_result_by_parameters(stored_params)
-    parameters = store_parameters(parameters)
+    if stored_params is None:
+        parameters = store_parameters(parameters)
+    else:
+        parameters = stored_params
+    result = get_result_by_parameters(parameters)
+    if result is not None:
+        return result
     prompts = build_prompts(parameters)
     answers = send_prompts(parameters, prompts)
-    result = postprocess_answers(answers, parameters)
+    result = postprocess_answers(parameters, answers)
     result = store_result(result)
     return result
 

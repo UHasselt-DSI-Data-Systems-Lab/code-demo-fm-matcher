@@ -26,12 +26,14 @@ def build_prompts(parameters: Parameters) -> List[Prompt]:
             prompt=CompletionCreateParamsNonStreaming(
                 {
                     "model": config["OPENAI_MODEL"],
+                    "temperature": config["OPENAI_TEMPERATURE"],
                     "messages": render_prompt(
                         (source_attribute, parameters.target_relation.attributes),
                         parameters,
                         "oneToN",
                     ),
                     "n": config["OPENAI_N"],
+                    "timeout": config["OPENAI_TIMEOUT"],
                 }
             ),
         )
@@ -84,7 +86,7 @@ def render_prompt(
         targets = [targets]
     template = read_prompt_template(template)
     env = Environment()
-    return [
+    messages = [
         {
             "role": part["role"],
             "content": env.from_string(part["content"]).render(
@@ -93,9 +95,10 @@ def render_prompt(
                     "source_attribute": source,
                     "target_relation": parameters.target_relation,
                     "target_attribute": target,
-                    # TODO: what about feedback?
+                    "feedback": parameters.feedback,
                 }
             ),
         }
         for part, source, target in template_iterator(template, sources, targets)
     ]
+    return [m for m in messages if len(m["content"]) > 0]

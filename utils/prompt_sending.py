@@ -10,7 +10,7 @@ import tenacity
 from .config import config
 from .errors import NotDoneException
 from .models import Answer, Parameters, Prompt
-from .storage import store_answer, store_chatcompletion
+from .storage import store_answer, store_chatcompletion, get_answers_by_prompt
 
 
 def send_prompts(parameters: Parameters, prompts: List[Prompt]) -> List[Answer]:
@@ -51,32 +51,34 @@ async def process_and_store_prompt(
     semaphore: asyncio.Semaphore = asyncio.Semaphore(1),
 ) -> List[Answer]:
     """Process a prompt and store the result. This method features a semaphore to avoid running into RateLimitErrors. Return the Answers in a list."""
-    # TODO: ask if stored
+    valid_answers = get_answers_by_prompt(prompt, filter_valid=True)
     _completion_prompt = copy.deepcopy(prompt.prompt)
-    valid_answers = []
-    try:
-        for attempt in tenacity.Retrying(
-            stop=tenacity.stop_after_attempt(5),
-            retry=(tenacity.retry_if_exception_type(NotDoneException)),
-        ):
-            with attempt:
-                async with semaphore:
-                    result = await ask_gpt(_completion_prompt)
-                # TODO: evaluate the choice to check the answers validity here
-                store_chatcompletion(result, prompt.meta["path"])
-                answers = result_into_answers(result, prompt)
-                for answer in answers:
-                    if is_valid_answer(answer):
-                        _completion_prompt["n"] -= 1
-                        answer.valid = True
-                        valid_answers.append(answer)
-                    store_answer(answer, prompt.meta["path"], result.id)
-                if _completion_prompt["n"] > 0:
-                    raise NotDoneException("Not enough valid answers provided.")
-    except tenacity.RetryError:
-        pass
+    _completion_prompt["n"] -= len(valid_answers)
+    if _completion_prompt["n"] > 0:
+        try:
+            for attempt in tenacity.Retrying(
+                stop=tenacity.stop_after_attempt(5),
+                retry=(tenacity.retry_if_exception_type(NotDoneException)),
+            ):
+                with attempt:
+                    async with semaphore:
+                        result = await ask_gpt(_completion_prompt)
+                    # TODO: evaluate the choice to check the answers validity here
+                    store_chatcompletion(result, prompt.meta["path"])
+                    answers = result_into_answers(result, prompt)
+                    for answer in answers:
+                        if is_valid_answer(answer):
+                            _completion_prompt["n"] -= 1
+                            answer.valid = True
+                            valid_answers.append(answer)
+                        store_answer(answer, prompt.meta["path"], result.id)
+                    if _completion_prompt["n"] > 0:
+                        raise NotDoneException("Not enough valid answers provided.")
+        except tenacity.RetryError:
+            pass
+    # NOTE: I am restricting the return to OPENAI_N elements here, unsure whether this will be really necessary though
+    return valid_answers[0:config["OPENAI_N"]]
 
-    return valid_answers
 
 async def process_prompt_list(
     parameters: Parameters, prompts: List[Prompt]
