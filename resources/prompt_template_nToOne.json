@@ -5,18 +5,22 @@
   },
   {
     "role": "user",
-    "content": "The relation from the source schema is the following:\nRelation name: '{{source_relation}}'\nRelation description: '{{source_relation_description}}'\nIn the following, I will list all attributes of '{{source_relation}}'."
+    "content": "The relation from the source schema is the following:\nRelation name: '{{source_relation.name}}'\nRelation description: '{{source_relation.description}}'\nIn the following, I will list all attributes of '{{source_relation.name}}'."
   },
   {
     "role": "user",
-    "content": "Attribute name: '{{source_attribute}}'\nAttribute description: '{{source_attribute_description}}'"
+    "content": "Attribute name: '{{source_attribute.name}}'\nAttribute description: '{{source_attribute.description}}'"
   },
   {
     "role": "user",
-    "content": "The attribute from the target schema is the following:\nRelation name: '{{target_relation}}'\nRelation description: '{{target_relation_description}}'\nAttribute name: '{{target_attribute}}'\nAttribute description: '{{target_attribute_description}}'"
+    "content": "The attribute from the target schema is the following:\nRelation name: '{{target_relation.name}}'\nRelation description: '{{target_relation.description}}'\nAttribute name: '{{target_attribute.name}}'\nAttribute description: '{{target_attribute.description}}'"
+  },
+  {
+	"role": "user",
+	"content": "{% if feedback.general is not none %}Take the following additional information into account: {{ feedback.general }}{% endif %}"
   },
   {
     "role": "user",
-    "content": "Explain which of the source attributes semantically match to '{{target_attribute}}' from '{{target_relation}}' of the target schema. Lets work this out step by step to make sure we get it correct. After your explanation, give a final decision JSON-formatted like this: `{ \"yes\": [], \"no\": [] }`. Under each of the following keys, list all target attributes of '{{source_relation}}' that apply: yes - if there is an inversible function that maps all values of the source attribute to the values of the target attribute; no - if there is no such function. Do not mention an attribute if there is not enough information to decide."
+    "content": "Explain which of the source attributes semantically match to '{{target_attribute.name}}' from '{{target_relation.name}}' of the target schema. Lets work this out step by step to make sure we get it correct. After your explanation, give a final decision JSON-formatted like this: `{ \"yes\": [], \"no\": [] }`. Under each of the following keys, list all target attributes of '{{source_relation.name}}' that apply: yes - if there is an inversible function that maps all values of the source attribute to the values of the target attribute; no - if there is no such function. Do not mention an attribute if there is not enough information to decide."
   }
 ]

@@ -205,9 +205,9 @@ def store_answer(
             (
                 chatcompletion_id,
                 _id_from_path(prompt_path),
+                answer.valid,
                 hash(answer),
                 json.dumps(answer.to_dict()),
-                answer.valid,
             ),
         )
     return answer
@@ -262,6 +262,6 @@ def get_answers_by_prompt(prompt: Prompt, filter_valid: bool = False) -> List[An
             (_id_from_path(prompt.meta["path"]),)
         ).fetchall()
         answers = [
-            Answer.from_json(res[0]) for res in sql_result
+            Answer.from_dict(json.loads(res[0])) for res in sql_result
         ]
     return answers

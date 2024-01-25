@@ -41,12 +41,32 @@ def build_prompts(parameters: Parameters) -> List[Prompt]:
     ]
     rendered_oneToN = [store_prompt(p) for p in rendered_oneToN]
 
-    # prompt_NtoOne = [
-    #    (parameters.source_relation.attributes, t)
-    #    for t in parameters.target_relation.attributes
-    # ]
+    rendered_nToOne = [
+        Prompt(
+            parameters=parameters,
+            attributes=PromptAttributePair(
+                parameters.source_relation.attributes,
+                [target_attribute],
+            ),
+            prompt=CompletionCreateParamsNonStreaming(
+                {
+                    "model": config["OPENAI_MODEL"],
+                    "temperature": config["OPENAI_TEMPERATURE"],
+                    "messages": render_prompt(
+                        (parameters.source_relation.attributes, target_attribute),
+                        parameters,
+                        "nToOne",
+                    ),
+                    "n": config["OPENAI_N"],
+                    "timeout": config["OPENAI_TIMEOUT"],
+                }
+            ),
+        )
+        for target_attribute in parameters.target_relation.attributes
+    ]
+    rendered_nToOne = [store_prompt(p) for p in rendered_nToOne]
 
-    return rendered_oneToN
+    return rendered_oneToN + rendered_nToOne
 
 
 @functools.cache
