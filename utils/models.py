@@ -13,10 +13,13 @@ def generic_from_dict(cls: dataclass, data: Any) -> Any:
     """
     if get_origin(cls) == list:
         return [generic_from_dict(get_args(cls)[0], d) for d in data]
+    elif cls in [Vote, str, float, int, bool]:
+        return cls(data)
     try:
         types = {f.name: f.type for f in fields(cls)}
         return cls(**{f: generic_from_dict(types[f], data[f]) for f in data})
     except:  # noqa: E722
+        print(f"this might cause a bug later on: cls: {cls}, data: {data}, type of data: {type(data)}")
         return data
 
 
@@ -125,6 +128,7 @@ class Result(Dictable):
         }
         return json.dumps(dct)
 
+    @staticmethod
     def from_json(jsn: str) -> Any:
         dct = json.loads(jsn)
         return Result(
