@@ -34,8 +34,8 @@ def _submit_button(mss: ModelSessionState):
                         feedback=deepcopy(mss.feedback)
                     )
                     result = schema_match(params)
-                    st.info("Debug info: manual sleep time for testing purposes!")
-                    time.sleep(1)
+                    #st.info("Debug info: manual sleep time for testing purposes!")
+                    #time.sleep(1)
                     # Change the name of the result to something unique
                     result.name = f"Experiment {mss.get_next_experiment_id()}"
                     mss.all_results.append(result)
