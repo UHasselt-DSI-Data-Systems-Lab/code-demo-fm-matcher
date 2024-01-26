@@ -66,6 +66,8 @@ def create_visualize_screen(mss: ModelSessionState):
             ):
                 show_unknown_ct = st.checkbox(f"Show unknown-votes for {compare_to.name}", value=True, key="vote_unknown_checkbox_2")
 
+    edge_threshold = st.slider("Vote visualization threshold", min_value=1, max_value=10, value=1, step=1, key="edge_threshold_slider", help="Only show edges with at least this many votes")
+
     # Quickly verify that all attributes have a uid
     for attr in result.parameters.source_relation.attributes:
         if attr.uid is None:
@@ -94,9 +96,9 @@ def create_visualize_screen(mss: ModelSessionState):
     ]
 
     # Add edges (=votes) to the graph
-    elements.extend(_create_edge_elements(result, left_attr_lookup, right_attr_lookup, show_yes, show_no, show_unknown, COLOR_YES, COLOR_NO, COLOR_UNKNOWN, "result"))
+    elements.extend(_create_edge_elements(result, left_attr_lookup, right_attr_lookup, show_yes, show_no, show_unknown, COLOR_YES, COLOR_NO, COLOR_UNKNOWN, "result", edge_threshold))
     if compare_to is not None:
-        elements.extend(_create_edge_elements(compare_to, left_attr_lookup, right_attr_lookup, show_yes_ct, show_no_ct, show_unknown_ct, COLOR_YES_2, COLOR_NO_2, COLOR_UNKNOWN_2, "compare_to"))
+        elements.extend(_create_edge_elements(compare_to, left_attr_lookup, right_attr_lookup, show_yes_ct, show_no_ct, show_unknown_ct, COLOR_YES_2, COLOR_NO_2, COLOR_UNKNOWN_2, "compare_to", edge_threshold))
 
 
     stylesheet = [
@@ -188,7 +190,7 @@ def _voting_details(result: Result, attr_pair: AttributePair, compare_to: Option
                     st.text(vote.explanation)
 
 
-def _create_edge_elements(result: Result, left_attr_lookup, right_attr_lookup, show_yes, show_no, show_unknown, color_yes, color_no, color_unknown, id_prefix: str) -> list[dict[str, Any]]:
+def _create_edge_elements(result: Result, left_attr_lookup, right_attr_lookup, show_yes, show_no, show_unknown, color_yes, color_no, color_unknown, id_prefix: str, edge_threshold: int=0) -> list[dict[str, Any]]:
     elements = []
     for pair, result_pair in result.pairs.items():
         source_uid = pair.source.uid
@@ -204,7 +206,7 @@ def _create_edge_elements(result: Result, left_attr_lookup, right_attr_lookup, s
         num_yes = len([decision for decision in result_pair.votes if decision.vote == Vote.YES])
         num_no = len([decision for decision in result_pair.votes if decision.vote == Vote.NO])
         num_unknown = len([decision for decision in result_pair.votes if decision.vote == Vote.UNKNOWN])
-        if show_yes:
+        if show_yes and num_yes >= edge_threshold:
             elements.append(
                 {
                     "data": {
@@ -217,7 +219,7 @@ def _create_edge_elements(result: Result, left_attr_lookup, right_attr_lookup, s
                     "selectable": False,
                 }
             )
-        if show_no:
+        if show_no and num_no >= edge_threshold:
             elements.append(
                 {
                     "data": {
@@ -230,7 +232,7 @@ def _create_edge_elements(result: Result, left_attr_lookup, right_attr_lookup, s
                     "selectable": False,
                 }
             )
-        if show_unknown:
+        if show_unknown and num_unknown >= edge_threshold:
             elements.append(
                 {
                     "data": {
