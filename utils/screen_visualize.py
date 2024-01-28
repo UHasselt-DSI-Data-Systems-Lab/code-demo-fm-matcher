@@ -5,12 +5,12 @@ from streamlit_extras.stylable_container import stylable_container
 from utils.model_session_state import ModelSessionState
 from utils.models import Attribute, AttributePair, Result, Vote
 
-COLOR_YES = "#4bff4b"
-COLOR_NO = "#ff4b4b"
+COLOR_YES = "#009E73"
+COLOR_NO = "#E69F00"
 COLOR_UNKNOWN = "#bfbfbf"
 
-COLOR_YES_2 = "#2d592d"
-COLOR_NO_2 = "#692424"
+COLOR_YES_2 = "#56B4E9"
+COLOR_NO_2 = "#F0E442"
 COLOR_UNKNOWN_2 = "#4a4a4a"
 
 def create_visualize_screen(mss: ModelSessionState):
@@ -43,7 +43,7 @@ def create_visualize_screen(mss: ModelSessionState):
             key="unknown_button",
             css_styles=f'span:has(+ input[aria-checked="true"]) {{background-color: {COLOR_UNKNOWN};border-color: {COLOR_UNKNOWN};}}',
         ):
-            show_unknown = st.checkbox(f"Show unknown-votes for {result.name}", value=True, key="vote_unknown_checkbox")
+            show_unknown = st.checkbox(f"Show unknown-votes for {result.name}", value=False, key="vote_unknown_checkbox")
         
     show_yes_ct = show_no_ct = show_unknown_ct = False
     if compare_to is not None:
@@ -64,9 +64,9 @@ def create_visualize_screen(mss: ModelSessionState):
                 key="unknown_button_2",
                 css_styles=f'span:has(+ input[aria-checked="true"]) {{background-color: {COLOR_UNKNOWN_2};border-color: {COLOR_UNKNOWN_2};}}',
             ):
-                show_unknown_ct = st.checkbox(f"Show unknown-votes for {compare_to.name}", value=True, key="vote_unknown_checkbox_2")
+                show_unknown_ct = st.checkbox(f"Show unknown-votes for {compare_to.name}", value=False, key="vote_unknown_checkbox_2")
 
-    edge_threshold = st.slider("Vote visualization threshold", min_value=1, max_value=10, value=1, step=1, key="edge_threshold_slider", help="Only show edges with at least this many votes")
+    edge_threshold = st.slider("Vote visualization threshold", min_value=1, max_value=6, value=2, step=1, key="edge_threshold_slider", help="Only show edges with at least this many votes")
 
     # Quickly verify that all attributes have a uid
     for attr in result.parameters.source_relation.attributes:
@@ -180,14 +180,14 @@ def _voting_details(result: Result, attr_pair: AttributePair, compare_to: Option
         votes = result.pairs[attr_pair].votes
         for i, vote in enumerate(votes):
             with st.expander(f"Vote {i+1}: {vote.vote.name}"):
-                st.text(vote.explanation)
+                st.markdown(vote.explanation)
     if compare_to is not None:
         with cols[1]:
             st.subheader(f"Votes for {compare_to.name}")
             votes = compare_to.pairs[attr_pair].votes
             for i, vote in enumerate(votes):
                 with st.expander(f"Vote {i+1}: {vote.vote.name}"):
-                    st.text(vote.explanation)
+                    st.markdown(vote.explanation)
 
 
 def _create_edge_elements(result: Result, left_attr_lookup, right_attr_lookup, show_yes, show_no, show_unknown, color_yes, color_no, color_unknown, id_prefix: str, edge_threshold: int=0) -> list[dict[str, Any]]:

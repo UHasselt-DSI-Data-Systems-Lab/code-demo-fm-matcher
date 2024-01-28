@@ -91,7 +91,6 @@ def _initialize_database(db_path: str) -> bool:
         }
         for table, columns in create_stmt.items():
             try:
-                print(f"CREATE TABLE {table} ({', '.join(columns)});")
                 con.execute(f"CREATE TABLE {table} ({', '.join(columns)});")
             except sqlite3.Error as err:
                 # TODO: do proper logging here

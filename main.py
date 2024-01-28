@@ -11,7 +11,8 @@ from utils.model_session_state import ModelSessionState
 
 st.set_page_config(layout="wide")
 
-st.title("Schema Matching for Health Data using Foundation Models")
+st.title("FM-Matcher")
+st.text("Schema Matching for Health Data using Foundation Models")
 
 # Load session state, creating a new object if none exists
 session_state_obj = st.session_state.get("session_state", None)
