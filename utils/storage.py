@@ -64,7 +64,7 @@ def _initialize_database(db_path: str) -> bool:
             ],
             "results": [
                 "id INTEGER PRIMARY KEY",
-                "parameters_id INTEGER NOT NULL REFERENCES parameters (id)",
+                "parameters_id INTEGER NOT NULL REFERENCES parameters (id) ON DELETE CASCADE ON UPDATE CASCADE",
                 "name TEXT",
                 "datetime INTEGER",
                 "hash TEXT NOT NULL",
@@ -72,18 +72,18 @@ def _initialize_database(db_path: str) -> bool:
             ],
             "prompts": [
                 "id INTEGER PRIMARY KEY",
-                "parameters_id INTEGER NOT NULL REFERENCES parameters (id)",
+                "parameters_id INTEGER NOT NULL REFERENCES parameters (id) ON DELETE CASCADE ON UPDATE CASCADE",
                 "hash TEXT NOT NULL",
                 "data JSON NOT NULL",
             ],
             "chatcompletions": [
                 "openai_id TEXT PRIMARY KEY",
-                "prompt_id INTEGER NOT NULL REFERENCES prompts (id)",
+                "prompt_id INTEGER NOT NULL REFERENCES prompts (id) ON DELETE CASCADE ON UPDATE CASCADE",
                 "data JSON NOT NULL",
             ],
             "answers": [
-                "chatcompletions_id TEXT REFERENCES chatcompletions (openai_id)",
-                "prompt_id INTEGER NOT NULL REFERENCES prompts (id)",
+                "chatcompletions_id TEXT REFERENCES chatcompletions (openai_id) ON DELETE CASCADE ON UPDATE CASCADE",
+                "prompt_id INTEGER NOT NULL REFERENCES prompts (id) ON DELETE CASCADE ON UPDATE CASCADE",
                 "valid INTEGER NOT NULL",
                 "hash TEXT NOT NULL",
                 "data JSON NOT NULL",
@@ -257,10 +257,7 @@ def get_answers_by_prompt(prompt: Prompt, filter_valid: bool = False) -> List[An
         else:
             sql_qry = "SELECT data FROM answers WHERE prompt_id=?;"
         sql_result = con.execute(
-            sql_qry,
-            (_id_from_path(prompt.meta["path"]),)
+            sql_qry, (_id_from_path(prompt.meta["path"]),)
         ).fetchall()
-        answers = [
-            Answer.from_dict(json.loads(res[0])) for res in sql_result
-        ]
+        answers = [Answer.from_dict(json.loads(res[0])) for res in sql_result]
     return answers

@@ -10,6 +10,10 @@
 			{
 				"name": "gender",
 				"description": "This is the gender of someone."
+			},
+			{
+				"name": "registerdate",
+				"description": "The datetime when someone registered."
 			}
 		]
 	},
@@ -24,6 +28,10 @@
 			{
 				"name": "last_name",
 				"description": "A patients family name."
+			},
+			{
+				"name": "birthdate",
+				"description": "The date of birth of a patient."
 			},
 			{
 				"name": "sex",
