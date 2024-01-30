@@ -21,14 +21,25 @@ def build_prompts(parameters: Parameters) -> List[Prompt]:
             parameters=parameters,
             attributes=PromptAttributePair(
                 [source_attribute],
-                parameters.target_relation.attributes
+                [
+                    attr
+                    for attr in parameters.target_relation.attributes
+                    if attr.included
+                ],
             ),
             prompt=CompletionCreateParamsNonStreaming(
                 {
                     "model": config["OPENAI_MODEL"],
                     "temperature": config["OPENAI_TEMPERATURE"],
                     "messages": render_prompt(
-                        (source_attribute, parameters.target_relation.attributes),
+                        (
+                            source_attribute,
+                            [
+                                attr
+                                for attr in parameters.target_relation.attributes
+                                if attr.included
+                            ],
+                        ),
                         parameters,
                         "oneToN",
                     ),
@@ -38,6 +49,7 @@ def build_prompts(parameters: Parameters) -> List[Prompt]:
             ),
         )
         for source_attribute in parameters.source_relation.attributes
+        if source_attribute.included
     ]
     rendered_oneToN = [store_prompt(p) for p in rendered_oneToN]
 
@@ -45,7 +57,11 @@ def build_prompts(parameters: Parameters) -> List[Prompt]:
         Prompt(
             parameters=parameters,
             attributes=PromptAttributePair(
-                parameters.source_relation.attributes,
+                [
+                    attr
+                    for attr in parameters.source_relation.attributes
+                    if attr.included
+                ],
                 [target_attribute],
             ),
             prompt=CompletionCreateParamsNonStreaming(
@@ -53,7 +69,14 @@ def build_prompts(parameters: Parameters) -> List[Prompt]:
                     "model": config["OPENAI_MODEL"],
                     "temperature": config["OPENAI_TEMPERATURE"],
                     "messages": render_prompt(
-                        (parameters.source_relation.attributes, target_attribute),
+                        (
+                            [
+                                attr
+                                for attr in parameters.source_relation.attributes
+                                if attr.included
+                            ],
+                            target_attribute,
+                        ),
                         parameters,
                         "nToOne",
                     ),
@@ -63,6 +86,7 @@ def build_prompts(parameters: Parameters) -> List[Prompt]:
             ),
         )
         for target_attribute in parameters.target_relation.attributes
+        if target_attribute.included
     ]
     rendered_nToOne = [store_prompt(p) for p in rendered_nToOne]
 
