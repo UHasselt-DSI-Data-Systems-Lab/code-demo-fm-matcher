@@ -1,0 +1,190 @@
+{
+  "source_relation": {
+    "name": "prescriptions",
+    "description": "The prescriptions table provides information about prescribed medications. Information includes the name of the drug, coded identifiers including the Generic Sequence Number (GSN) and National Drug Code (NDC), the product strength, the formulary dose, and the route of administration.",
+    "attributes": [
+      {
+        "name": "subject_id",
+        "description": "subject_id is a unique identifier which specifies an individual patient. Any rows associated with a single subject_id pertain to the same individual."
+      },
+      {
+        "name": "hadm_id",
+        "description": "hadm_id is an integer identifier which is unique for each patient hospitalization."
+      },
+      {
+        "name": "pharmacy_id",
+        "description": "An identifier which links administrations in emar to pharmacy information in the pharmacy table."
+      },
+      {
+        "name": "poe_id",
+        "description": "These columns allow linking prescriptions to associated orders in the poe table."
+      },
+      {
+        "name": "poe_seq",
+        "description": "These columns allow linking prescriptions to associated orders in the poe table."
+      },
+      {
+        "name": "order_provider_id",
+        "description": "order_provider_id provides an anonymous identifier for the provider who initiated the order. Provider identifiers follow a consistent pattern: the letter \u201cP\u201d, followed by either three numbers, followed by two letters or two numbers. For example, \u201cP003AB\u201d, \u201cP00102\u201d, \u201cP1248B\u201d, etc. Provider identifiers are randomly generated and do not have any inherent meaning aside from uniquely identifying the same provider across the database."
+      },
+      {
+        "name": "starttime",
+        "description": "The prescribed start and stop time for the medication."
+      },
+      {
+        "name": "stoptime",
+        "description": "The prescribed start and stop time for the medication."
+      },
+      {
+        "name": "drug_type",
+        "description": "The component of the prescription which the drug occupies. Can be one of \u2018MAIN\u2019, \u2018BASE\u2019, or \u2018ADDITIVE\u2019."
+      },
+      {
+        "name": "drug",
+        "description": "The component of the prescription which the drug occupies. Can be one of \u2018MAIN\u2019, \u2018BASE\u2019, or \u2018ADDITIVE\u2019."
+      },
+      {
+        "name": "formulary_drug_cd",
+        "description": "A hospital specific ontology used to order drugs from the formulary."
+      },
+      {
+        "name": "gsn",
+        "description": "The Generic Sequence Number (GSN), a coded identifier used for medications."
+      },
+      {
+        "name": "ndc",
+        "description": "The National Drug Code (NDC), a coded identifier which uniquely identifiers medications."
+      },
+      {
+        "name": "prod_strength",
+        "description": "A free-text description of the composition of the prescribed medication (e.g. \u201812 mg / 0.8 mL Oral Syringe\u2019, \u201812.5mg Tablet\u2019, etc)."
+      },
+      {
+        "name": "form_rx",
+        "description": "The container in which the formulary dose is delivered (e.g. \u2018TABLET\u2019, \u2018VIAL\u2019, etc)."
+      },
+      {
+        "name": "dose_val_rx",
+        "description": "The prescribed dose for the patient intended to be administered over the given time period."
+      },
+      {
+        "name": "dose_unit_rx",
+        "description": "The unit of measurement for the dose."
+      },
+      {
+        "name": "form_val_disp",
+        "description": "The amount of the medication which is contained in a single formulary dose."
+      },
+      {
+        "name": "form_unit_disp",
+        "description": "The unit of measurement used for the formulary dosage."
+      },
+      {
+        "name": "doses_per_24_hrs",
+        "description": "The number of doses per 24 hours for which the medication is to be given. A daily dose would result in doses_per_24_hrs: 1, bidaily (BID) would be 2, and so on."
+      },
+      {
+        "name": "route",
+        "description": "The route of administration for the medication."
+      }
+    ]
+  },
+  "target_relation": {
+    "name": "DRUG_EXPOSURE",
+    "description": "This table captures records about the exposure to a Drug ingested or otherwise introduced into the body. A Drug is a biochemical substance formulated in such a way that when administered to a Person it will exert a certain biochemical effect on the metabolism. Drugs include prescription and over-the-counter medicines, vaccines, and large-molecule biologic therapies. Radiological devices ingested or applied locally do not count as Drugs.",
+    "attributes": [
+      {
+        "name": "drug_exposure_id",
+        "description": "The unique key given to records of drug dispensings or administrations for a person. Refer to the ETL for how duplicate drugs during the same visit were handled."
+      },
+      {
+        "name": "person_id",
+        "description": "The PERSON_ID of the PERSON for whom the drug dispensing or administration is recorded. This may be a system generated code."
+      },
+      {
+        "name": "drug_concept_id",
+        "description": "The DRUG_CONCEPT_ID field is recommended for primary use in analyses, and must be used for network studies. This is the standard concept mapped from the source concept id which represents a drug product or molecule otherwise introduced to the body. The drug concepts can have a varying degree of information about drug strength and dose. This information is relevant in the context of quantity and administration information in the subsequent fields plus strength information from the DRUG_STRENGTH table, provided as part of the standard vocabulary download."
+      },
+      {
+        "name": "drug_exposure_start_date",
+        "description": "Use this date to determine the start date of the drug record."
+      },
+      {
+        "name": "drug_exposure_start_datetime",
+        "description": ""
+      },
+      {
+        "name": "drug_exposure_end_date",
+        "description": "The DRUG_EXPOSURE_END_DATE denotes the day the drug exposure ended for the patient."
+      },
+      {
+        "name": "drug_exposure_end_datetime",
+        "description": ""
+      },
+      {
+        "name": "verbatim_end_date",
+        "description": "This is the end date of the drug exposure as it appears in the source data, if it is given"
+      },
+      {
+        "name": "drug_type_concept_id",
+        "description": "You can use the TYPE_CONCEPT_ID to delineate between prescriptions written vs.\u00a0prescriptions dispensed vs.\u00a0medication history vs.\u00a0patient-reported exposure, etc."
+      },
+      {
+        "name": "stop_reason",
+        "description": "The reason a person stopped a medication as it is represented in the source. Reasons include regimen completed, changed, removed, etc. This field will be retired in v6.0."
+      },
+      {
+        "name": "refills",
+        "description": "This is only filled in when the record is coming from a prescription written this field is meant to represent intended refills at time of the prescription."
+      },
+      {
+        "name": "quantity",
+        "description": ""
+      },
+      {
+        "name": "days_supply",
+        "description": ""
+      },
+      {
+        "name": "sig",
+        "description": "This is the verbatim instruction for the drug as written by the provider."
+      },
+      {
+        "name": "route_concept_id",
+        "description": ""
+      },
+      {
+        "name": "lot_number",
+        "description": ""
+      },
+      {
+        "name": "provider_id",
+        "description": "The Provider associated with drug record, e.g.\u00a0the provider who wrote the prescription or the provider who administered the drug."
+      },
+      {
+        "name": "visit_occurrence_id",
+        "description": "The Visit during which the drug was prescribed, administered or dispensed."
+      },
+      {
+        "name": "visit_detail_id",
+        "description": "The VISIT_DETAIL record during which the drug exposure occurred. For example, if the person was in the ICU at the time of the drug administration the VISIT_OCCURRENCE record would reflect the overall hospital stay and the VISIT_DETAIL record would reflect the ICU stay during the hospital visit."
+      },
+      {
+        "name": "drug_source_value",
+        "description": "This field houses the verbatim value from the source data representing the drug exposure that occurred. For example, this could be an NDC or Gemscript code."
+      },
+      {
+        "name": "drug_source_concept_id",
+        "description": "This is the concept representing the drug source value and may not necessarily be standard. This field is discouraged from use in analysis because it is not required to contain Standard Concepts that are used across the OHDSI community, and should only be used when Standard Concepts do not adequately represent the source detail for the Drug necessary for a given analytic use case. Consider using DRUG_CONCEPT_ID instead to enable standardized analytics that can be consistent across the network."
+      },
+      {
+        "name": "route_source_value",
+        "description": "This field houses the verbatim value from the source data representing the drug route."
+      },
+      {
+        "name": "dose_unit_source_value",
+        "description": "This field houses the verbatim value from the source data representing the dose unit of the drug given."
+      }
+    ]
+  }
+}

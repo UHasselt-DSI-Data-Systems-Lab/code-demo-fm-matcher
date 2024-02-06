@@ -66,76 +66,72 @@
     ]
   },
   "target_relation": {
-    "name": "VISIT_OCCURRENCE",
-    "description": "This table contains Events where Persons engage with the healthcare system for a duration of time. They are often also called \u201cEncounters\u201d. Visits are defined by a configuration of circumstances under which they occur, such as (i) whether the patient comes to a healthcare institution, the other way around, or the interaction is remote, (ii) whether and what kind of trained medical staff is delivering the service during the Visit, and (iii) whether the Visit is transient or for a longer period involving a stay in bed.",
+    "name": "CONDITION_OCCURRENCE",
+    "description": "This table contains records of Events of a Person suggesting the presence of a disease or medical condition stated as a diagnosis, a sign, or a symptom, which is either observed by a Provider or reported by the patient.",
     "attributes": [
       {
-        "name": "visit_occurrence_id",
-        "description": "Use this to identify unique interactions between a person and the health care system. This identifier links across the other CDM event tables to associate events with a visit."
+        "name": "condition_occurrence_id",
+        "description": "The unique key given to a condition record for a person. Refer to the ETL for how duplicate conditions during the same visit were handled."
       },
       {
         "name": "person_id",
+        "description": "The PERSON_ID of the PERSON for whom the condition is recorded."
+      },
+      {
+        "name": "condition_concept_id",
+        "description": "The CONDITION_CONCEPT_ID field is recommended for primary use in analyses, and must be used for network studies. This is the standard concept mapped from the source value which represents a condition"
+      },
+      {
+        "name": "condition_start_date",
+        "description": "Use this date to determine the start date of the condition"
+      },
+      {
+        "name": "condition_start_datetime",
         "description": ""
       },
       {
-        "name": "visit_concept_id",
-        "description": "This field contains a concept id representing the kind of visit, like inpatient or outpatient. All concepts in this field should be standard and belong to the Visit domain."
+        "name": "condition_end_date",
+        "description": "Use this date to determine the end date of the condition"
       },
       {
-        "name": "visit_start_date",
-        "description": "For inpatient visits, the start date is typically the admission date. For outpatient visits the start date and end date will be the same."
-      },
-      {
-        "name": "visit_start_datetime",
+        "name": "condition_end_datetime",
         "description": ""
       },
       {
-        "name": "visit_end_date",
-        "description": "For inpatient visits the end date is typically the discharge date."
+        "name": "condition_type_concept_id",
+        "description": "This field can be used to determine the provenance of the Condition record, as in whether the condition was from an EHR system, insurance claim, registry, or other sources."
       },
       {
-        "name": "visit_end_datetime",
-        "description": ""
+        "name": "condition_status_concept_id",
+        "description": "This concept represents the point during the visit the diagnosis was given (admitting diagnosis, final diagnosis), whether the diagnosis was determined due to laboratory findings, if the diagnosis was exclusionary, or if it was a preliminary diagnosis, among others."
       },
       {
-        "name": "visit_type_concept_id",
-        "description": "Use this field to understand the provenance of the visit record, or where the record comes from."
+        "name": "stop_reason",
+        "description": "The Stop Reason indicates why a Condition is no longer valid with respect to the purpose within the source data. Note that a Stop Reason does not necessarily imply that the condition is no longer occurring."
       },
       {
         "name": "provider_id",
-        "description": "There will only be one provider per visit record and the ETL document should clearly state how they were chosen (attending, admitting, etc.). If there are multiple providers associated with a visit in the source, this can be reflected in the event tables (CONDITION_OCCURRENCE, PROCEDURE_OCCURRENCE, etc.) or in the VISIT_DETAIL table."
+        "description": "The provider associated with condition record, e.g.\u00a0the provider who made the diagnosis or the provider who recorded the symptom."
       },
       {
-        "name": "care_site_id",
-        "description": "This field provides information about the Care Site where the Visit took place."
+        "name": "visit_occurrence_id",
+        "description": "The visit during which the condition occurred."
       },
       {
-        "name": "visit_source_value",
-        "description": "This field houses the verbatim value from the source data representing the kind of visit that took place (inpatient, outpatient, emergency, etc.)"
+        "name": "visit_detail_id",
+        "description": "The VISIT_DETAIL record during which the condition occurred. For example, if the person was in the ICU at the time of the diagnosis the VISIT_OCCURRENCE record would reflect the overall hospital stay and the VISIT_DETAIL record would reflect the ICU stay during the hospital visit."
       },
       {
-        "name": "visit_source_concept_id",
-        "description": ""
+        "name": "condition_source_value",
+        "description": "This field houses the verbatim value from the source data representing the condition that occurred. For example, this could be an ICD10 or Read code."
       },
       {
-        "name": "admitting_source_concept_id",
-        "description": "Use this field to determine where the patient was admitted from. This concept is part of the visit domain and can indicate if a patient was admitted to the hospital from a long-term care facility, for example."
+        "name": "condition_source_concept_id",
+        "description": "This is the concept representing the condition source value and may not necessarily be standard. This field is discouraged from use in analysis because it is not required to contain Standard Concepts that are used across the OHDSI community, and should only be used when Standard Concepts do not adequately represent the source detail for the Condition necessary for a given analytic use case. Consider using CONDITION_CONCEPT_ID instead to enable standardized analytics that can be consistent across the network."
       },
       {
-        "name": "admitting_source_value",
-        "description": ""
-      },
-      {
-        "name": "discharge_to_concept_id",
-        "description": "Use this field to determine where the patient was discharged to after a visit. This concept is part of the visit domain and can indicate if a patient was discharged to home or sent to a long-term care facility, for example."
-      },
-      {
-        "name": "discharge_to_source_value",
-        "description": ""
-      },
-      {
-        "name": "preceding_visit_occurrence_id",
-        "description": "Use this field to find the visit that occurred for the person prior to the given visit. There could be a few days or a few years in between."
+        "name": "condition_status_source_value",
+        "description": "This field houses the verbatim value from the source data representing the condition status."
       }
     ]
   }

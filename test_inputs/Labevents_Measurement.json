@@ -1,0 +1,158 @@
+{
+  "source_relation": {
+    "name": "labevents",
+    "description": "The labevents table stores the results of all laboratory measurements made for a single patient. These include hematology measurements, blood gases, chemistry panels, and less common tests such as genetic assays.",
+    "attributes": [
+      {
+        "name": "labevent_id",
+        "description": "An integer which is unique for every row in the table."
+      },
+      {
+        "name": "subject_id",
+        "description": "subject_id is a unique identifier which specifies an individual patient. Any rows associated with a single subject_id pertain to the same individual."
+      },
+      {
+        "name": "hadm_id",
+        "description": "hadm_id is an integer identifier which is unique for each patient hospitalization."
+      },
+      {
+        "name": "specimen_id",
+        "description": "Uniquely denoted the specimen from which the lab measurement was made. Most lab measurements are made on patient derived samples (specimens) such as blood, urine, and so on. Often multiple measurements are made on the same sample. The specimen_id will group measurements made on the same sample, e.g. blood gas measurements made on the same sample of blood."
+      },
+      {
+        "name": "itemid",
+        "description": "An identifier which uniquely denotes laboratory concepts."
+      },
+      {
+        "name": "order_provider_id",
+        "description": "order_provider_id provides an anonymous identifier for the provider who ordered the laboratory measurement. Provider identifiers follow a consistent pattern: the letter \u201cP\u201d, followed by either three numbers, followed by two letters or two numbers. For example, \u201cP003AB\u201d, \u201cP00102\u201d, \u201cP1248B\u201d, etc. Provider identifiers are randomly generated and do not have any inherent meaning aside from uniquely identifying the same provider across the database."
+      },
+      {
+        "name": "charttime",
+        "description": "The time at which the laboratory measurement was charted. This is usually the time at which the specimen was acquired, and is usually significantly earlier than the time at which the measurement is available."
+      },
+      {
+        "name": "storetime",
+        "description": "The time at which the measurement was made available in the laboratory system. This is when the information would have been available to care providers."
+      },
+      {
+        "name": "value",
+        "description": "The result of the laboratory measurement and, if it is numeric, the value cast as a numeric data type."
+      },
+      {
+        "name": "valuenum",
+        "description": "The result of the laboratory measurement and, if it is numeric, the value cast as a numeric data type."
+      },
+      {
+        "name": "valueuom",
+        "description": "The unit of measurement for the laboratory concept."
+      },
+      {
+        "name": "ref_range_lower",
+        "description": "Upper and lower reference ranges indicating the normal range for the laboratory measurements. Values outside the reference ranges are considered abnormal."
+      },
+      {
+        "name": "ref_range_upper",
+        "description": "Upper and lower reference ranges indicating the normal range for the laboratory measurements. Values outside the reference ranges are considered abnormal."
+      },
+      {
+        "name": "flag",
+        "description": "A brief string mainly used to indicate if the laboratory measurement is abnormal."
+      },
+      {
+        "name": "priority",
+        "description": "The priority of the laboratory measurement: either routine or stat (urgent)."
+      },
+      {
+        "name": "comments",
+        "description": "Deidentified free-text comments associated with the laboratory measurement. Usually these provide information about the sample, whether any notifications were made to care providers regarding the results, considerations for interpretation, or in some cases the comments contain the result of the laboratory itself. Comments which have been fully deidentified (i.e. no information content retained) are present as three underscores: ___. A NULL comment indicates no comment was made for the row."
+      }
+    ]
+  },
+  "target_relation": {
+    "name": "MEASUREMENT",
+    "description": "The MEASUREMENT table contains records of Measurements, i.e.\u00a0structured values (numerical or categorical) obtained through systematic and standardized examination or testing of a Person or Person\u2019s sample. The MEASUREMENT table contains both orders and results of such Measurements as laboratory tests, vital signs, quantitative findings from pathology reports, etc. Measurements are stored as attribute value pairs, with the attribute as the Measurement Concept and the value representing the result. The value can be a Concept (stored in VALUE_AS_CONCEPT), or a numerical value (VALUE_AS_NUMBER) with a Unit (UNIT_CONCEPT_ID). The Procedure for obtaining the sample is housed in the PROCEDURE_OCCURRENCE table, though it is unnecessary to create a PROCEDURE_OCCURRENCE record for each measurement if one does not exist in the source data. Measurements differ from Observations in that they require a standardized test or some other activity to generate a quantitative or qualitative result. If there is no result, it is assumed that the lab test was conducted but the result was not captured.",
+    "attributes": [
+      {
+        "name": "measurement_id",
+        "description": "The unique key given to a Measurement record for a Person. Refer to the ETL for how duplicate Measurements during the same Visit were handled."
+      },
+      {
+        "name": "person_id",
+        "description": "The PERSON_ID of the Person for whom the Measurement is recorded. This may be a system generated code."
+      },
+      {
+        "name": "measurement_concept_id",
+        "description": "The MEASUREMENT_CONCEPT_ID field is recommended for primary use in analyses, and must be used for network studies."
+      },
+      {
+        "name": "measurement_date",
+        "description": "Use this date to determine the date of the measurement."
+      },
+      {
+        "name": "measurement_datetime",
+        "description": ""
+      },
+      {
+        "name": "measurement_time",
+        "description": ""
+      },
+      {
+        "name": "measurement_type_concept_id",
+        "description": "This field can be used to determine the provenance of the Measurement record, as in whether the measurement was from an EHR system, insurance claim, registry, or other sources."
+      },
+      {
+        "name": "operator_concept_id",
+        "description": "The meaning of Concept 4172703 for \u2018=\u2019 is identical to omission of a OPERATOR_CONCEPT_ID value. Since the use of this field is rare, it\u2019s important when devising analyses to not to forget testing for the content of this field for values different from =."
+      },
+      {
+        "name": "value_as_number",
+        "description": "This is the numerical value of the Result of the Measurement, if available. Note that measurements such as blood pressures will be split into their component parts i.e.\u00a0one record for systolic, one record for diastolic."
+      },
+      {
+        "name": "value_as_concept_id",
+        "description": "If the raw data gives a categorial result for measurements those values are captured and mapped to standard concepts in the \u2018Meas Value\u2019 domain."
+      },
+      {
+        "name": "unit_concept_id",
+        "description": "There is currently no recommended unit for individual measurements, i.e.\u00a0it is not mandatory to represent Hemoglobin a1C measurements as a percentage. UNIT_SOURCE_VALUES should be mapped to a Standard Concept in the Unit domain that best represents the unit as given in the source data."
+      },
+      {
+        "name": "range_low",
+        "description": "Ranges have the same unit as the VALUE_AS_NUMBER. These ranges are provided by the source and should remain NULL if not given."
+      },
+      {
+        "name": "range_high",
+        "description": "Ranges have the same unit as the VALUE_AS_NUMBER. These ranges are provided by the source and should remain NULL if not given."
+      },
+      {
+        "name": "provider_id",
+        "description": "The provider associated with measurement record, e.g.\u00a0the provider who ordered the test or the provider who recorded the result."
+      },
+      {
+        "name": "visit_occurrence_id",
+        "description": "The visit during which the Measurement occurred."
+      },
+      {
+        "name": "visit_detail_id",
+        "description": "The VISIT_DETAIL record during which the Measurement occurred. For example, if the Person was in the ICU at the time the VISIT_OCCURRENCE record would reflect the overall hospital stay and the VISIT_DETAIL record would reflect the ICU stay during the hospital visit."
+      },
+      {
+        "name": "measurement_source_value",
+        "description": "This field houses the verbatim value from the source data representing the Measurement that occurred. For example, this could be an ICD10 or Read code."
+      },
+      {
+        "name": "measurement_source_concept_id",
+        "description": "This is the concept representing the MEASUREMENT_SOURCE_VALUE and may not necessarily be standard. This field is discouraged from use in analysis because it is not required to contain Standard Concepts that are used across the OHDSI community, and should only be used when Standard Concepts do not adequately represent the source detail for the Measurement necessary for a given analytic use case. Consider using MEASUREMENT_CONCEPT_ID instead to enable standardized analytics that can be consistent across the network."
+      },
+      {
+        "name": "unit_source_value",
+        "description": "This field houses the verbatim value from the source data representing the unit of the Measurement that occurred."
+      },
+      {
+        "name": "value_source_value",
+        "description": "This field houses the verbatim result value of the Measurement from the source data ."
+      }
+    ]
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "source_relation": {
+    "name": "diagnoses_icd",
+    "description": "During routine hospital care, patients are billed by the hospital for diagnoses associated with their hospital stay. This table contains a record of all diagnoses a patient was billed for during their hospital stay using the ICD-9 and ICD-10 ontologies. Diagnoses are billed on hospital discharge, and are determined by trained persons who read signed clinical notes.",
+    "attributes": [
+      {
+        "name": "code",
+        "description": "icd_code is the International Coding Definitions (ICD) code. There are two versions for this coding system: version 9 (ICD-9) and version 10 (ICD-10). These can be differentiated using the icd_version column. In general, ICD-10 codes are more detailed, though code mappings (or \u201ccross-walks\u201d) exist which convert ICD-9 codes to ICD-10 codes. Both ICD-9 and ICD-10 codes are often presented with a decimal. This decimal is not required for interpretation of an ICD code; i.e. the icd_code of \u20180010\u2019 is equivalent to \u2018001.0\u2019. ICD-9 and ICD-10 codes have distinct formats: ICD-9 codes are 5 character long strings which are entirely numeric (with the exception of codes prefixed with \u201cE\u201d or \u201cV\u201d which are used for external causes of injury or supplemental classification). Importantly, ICD-9 codes are retained as strings in the database as the leading 0s in codes are meaningful. ICD-10 codes are 3-7 characters long and always prefixed by a letter followed by a set of numeric values."
+      },
+      {
+        "name": "version",
+        "description": "icd_code is the International Coding Definitions (ICD) code. There are two versions for this coding system: version 9 (ICD-9) and version 10 (ICD-10). These can be differentiated using the icd_version column. In general, ICD-10 codes are more detailed, though code mappings (or \u201ccross-walks\u201d) exist which convert ICD-9 codes to ICD-10 codes. Both ICD-9 and ICD-10 codes are often presented with a decimal. This decimal is not required for interpretation of an ICD code; i.e. the icd_code of \u20180010\u2019 is equivalent to \u2018001.0\u2019. ICD-9 and ICD-10 codes have distinct formats: ICD-9 codes are 5 character long strings which are entirely numeric (with the exception of codes prefixed with \u201cE\u201d or \u201cV\u201d which are used for external causes of injury or supplemental classification). Importantly, ICD-9 codes are retained as strings in the database as the leading 0s in codes are meaningful. ICD-10 codes are 3-7 characters long and always prefixed by a letter followed by a set of numeric values."
+      },
+      {
+        "name": "subject_id",
+        "description": "subject_id is a unique identifier which specifies an individual patient. Any rows associated with a single subject_id pertain to the same individual."
+      },
+      {
+        "name": "hadm_id",
+        "description": "hadm_id is an integer identifier which is unique for each patient hospitalization."
+      },
+      {
+        "name": "seq_num",
+        "description": "The priority assigned to the diagnoses. The priority can be interpreted as a ranking of which diagnoses are \u201cimportant\u201d, but many caveats to this broad statement exist. For example, patients who are diagnosed with sepsis must have sepsis as their 2nd billed condition. The 1st billed condition must be the infectious agent. There\u2019s also less importance placed on ranking low priority diagnoses \u201ccorrectly\u201d (as there may be no correct ordering of the priority of the 5th - 10th diagnosis codes, for example)."
+      },
+      {
+        "name": "icd_code",
+        "description": "icd_code is the International Coding Definitions (ICD) code. There are two versions for this coding system: version 9 (ICD-9) and version 10 (ICD-10). These can be differentiated using the icd_version column. In general, ICD-10 codes are more detailed, though code mappings (or \u201ccross-walks\u201d) exist which convert ICD-9 codes to ICD-10 codes. Both ICD-9 and ICD-10 codes are often presented with a decimal. This decimal is not required for interpretation of an ICD code; i.e. the icd_code of \u20180010\u2019 is equivalent to \u2018001.0\u2019."
+      },
+      {
+        "name": "icd_version",
+        "description": "icd_code is the International Coding Definitions (ICD) code. There are two versions for this coding system: version 9 (ICD-9) and version 10 (ICD-10). These can be differentiated using the icd_version column. In general, ICD-10 codes are more detailed, though code mappings (or \u201ccross-walks\u201d) exist which convert ICD-9 codes to ICD-10 codes. Both ICD-9 and ICD-10 codes are often presented with a decimal. This decimal is not required for interpretation of an ICD code; i.e. the icd_code of \u20180010\u2019 is equivalent to \u2018001.0\u2019."
+      }
+    ]
+  },
+  "target_relation": {
+    "name": "CONDITION_OCCURRENCE",
+    "description": "This table contains records of Events of a Person suggesting the presence of a disease or medical condition stated as a diagnosis, a sign, or a symptom, which is either observed by a Provider or reported by the patient.",
+    "attributes": [
+      {
+        "name": "condition_occurrence_id",
+        "description": "The unique key given to a condition record for a person. Refer to the ETL for how duplicate conditions during the same visit were handled."
+      },
+      {
+        "name": "person_id",
+        "description": "The PERSON_ID of the PERSON for whom the condition is recorded."
+      },
+      {
+        "name": "condition_concept_id",
+        "description": "The CONDITION_CONCEPT_ID field is recommended for primary use in analyses, and must be used for network studies. This is the standard concept mapped from the source value which represents a condition"
+      },
+      {
+        "name": "condition_start_date",
+        "description": "Use this date to determine the start date of the condition"
+      },
+      {
+        "name": "condition_start_datetime",
+        "description": ""
+      },
+      {
+        "name": "condition_end_date",
+        "description": "Use this date to determine the end date of the condition"
+      },
+      {
+        "name": "condition_end_datetime",
+        "description": ""
+      },
+      {
+        "name": "condition_type_concept_id",
+        "description": "This field can be used to determine the provenance of the Condition record, as in whether the condition was from an EHR system, insurance claim, registry, or other sources."
+      },
+      {
+        "name": "condition_status_concept_id",
+        "description": "This concept represents the point during the visit the diagnosis was given (admitting diagnosis, final diagnosis), whether the diagnosis was determined due to laboratory findings, if the diagnosis was exclusionary, or if it was a preliminary diagnosis, among others."
+      },
+      {
+        "name": "stop_reason",
+        "description": "The Stop Reason indicates why a Condition is no longer valid with respect to the purpose within the source data. Note that a Stop Reason does not necessarily imply that the condition is no longer occurring."
+      },
+      {
+        "name": "provider_id",
+        "description": "The provider associated with condition record, e.g.\u00a0the provider who made the diagnosis or the provider who recorded the symptom."
+      },
+      {
+        "name": "visit_occurrence_id",
+        "description": "The visit during which the condition occurred."
+      },
+      {
+        "name": "visit_detail_id",
+        "description": "The VISIT_DETAIL record during which the condition occurred. For example, if the person was in the ICU at the time of the diagnosis the VISIT_OCCURRENCE record would reflect the overall hospital stay and the VISIT_DETAIL record would reflect the ICU stay during the hospital visit."
+      },
+      {
+        "name": "condition_source_value",
+        "description": "This field houses the verbatim value from the source data representing the condition that occurred. For example, this could be an ICD10 or Read code."
+      },
+      {
+        "name": "condition_source_concept_id",
+        "description": "This is the concept representing the condition source value and may not necessarily be standard. This field is discouraged from use in analysis because it is not required to contain Standard Concepts that are used across the OHDSI community, and should only be used when Standard Concepts do not adequately represent the source detail for the Condition necessary for a given analytic use case. Consider using CONDITION_CONCEPT_ID instead to enable standardized analytics that can be consistent across the network."
+      },
+      {
+        "name": "condition_status_source_value",
+        "description": "This field houses the verbatim value from the source data representing the condition status."
+      }
+    ]
+  }
+}
