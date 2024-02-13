@@ -245,6 +245,21 @@ def get_result_by_parameters(parameters: Parameters) -> Optional[Result]:
     return result
 
 
+def get_prompt_by_parameters(parameters: Parameters) -> List[Prompt]:
+    """Returns all prompts for the given parameters. Returns an empty list if none are stored."""
+    if config["SQLITE_PATH"] is None:
+        return []
+    db_path = config["SQLITE_PATH"]
+    prompts = []
+    with get_connection(db_path) as con:
+        sql_result = con.execute(
+            "SELECT data FROM prompts WHERE parameters_id=?;",
+            (_id_from_path(parameters.meta["path"]),)
+        ).fetchall()
+        prompts = [Prompt.from_dict(json.loads(res[0])) for res in sql_result]
+    return prompts
+
+
 def get_answers_by_prompt(prompt: Prompt, filter_valid: bool = False) -> List[Answer]:
     """Returns all answers for the given prompt. Returns an empty list if none are stored."""
     if config["SQLITE_PATH"] is None:
