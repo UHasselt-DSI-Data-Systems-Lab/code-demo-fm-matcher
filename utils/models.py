@@ -1,6 +1,7 @@
 from dataclasses import asdict, dataclass, field, fields
 from enum import StrEnum
 import json
+from types import NoneType
 from typing import Any, Dict, List, Optional, get_args, get_origin
 
 from openai.types.completion_create_params import CompletionCreateParams
@@ -11,10 +12,24 @@ def generic_from_dict(cls: dataclass, data: Any) -> Any:
     Thanks to Salman Mehmood of https://www.delftstack.com/howto/python/python-dataclass-from-dict/
     I added the possibility to convert lists of dataclasses as well. When using this method, make sure that all attributes are properly annotated with their types, e.g. `List[Attributes]` instead of `list`.
     """
+    # convert lists in dataclasses
     if get_origin(cls) == list:
         return [generic_from_dict(get_args(cls)[0], d) for d in data]
-    elif cls in [Vote, str, float, int, bool]:
-        return cls(data)
+    # convert dicts in dataclasses
+    if get_origin(cls) == dict:
+        return {
+            generic_from_dict(get_args(cls)[0], k): generic_from_dict(get_args(cls)[1], v)
+            for k, v in data.items()
+        }
+    # for types with arguments (e.g. Union[cls1, cls2, ...]), we need to iterate over them
+    for _class in [cls] + list(get_args(cls)):
+        # return one of the parsed base types if found
+        if _class in [Vote, str, float, int, bool] and data:
+            return _class(data)
+        # return None if encountered and allowed
+        if _class == NoneType and data is None:
+            return None
+    # if everything above "failed", we assume that we reached a dataclass
     try:
         types = {f.name: f.type for f in fields(cls)}
         return cls(**{f: generic_from_dict(types[f], data[f]) for f in data})
