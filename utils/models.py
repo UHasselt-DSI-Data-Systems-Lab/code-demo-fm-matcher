@@ -218,7 +218,7 @@ class Prompt:
             parameters=Parameters.from_dict(data["parameters"]),
             attributes=PromptAttributePair.from_dict(data["attributes"]),
             # CompetionCreateParams is a pydantic model, not a dataclass!
-            prompt=CompletionCreateParams.parse_obj(data["prompt"]),
+            prompt=data["prompt"],
             meta=data.get("meta", {}),
         )
 
