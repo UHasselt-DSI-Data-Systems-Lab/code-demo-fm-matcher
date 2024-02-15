@@ -321,6 +321,7 @@ class Answer:
         return Answer(
             attributes=PromptAttributePair.from_dict(data["attributes"]),
             answer=data["answer"],
+            index=data["index"],
             valid=data.get("valid", False),
             meta=data.get("meta", {}),
         )
