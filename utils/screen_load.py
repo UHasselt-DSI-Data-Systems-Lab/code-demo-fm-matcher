@@ -2,7 +2,7 @@ import json
 from typing import Optional
 import streamlit as st
 from utils.model_session_state import ModelSessionState
-from utils.models import Relation, Attribute, Result, generic_from_dict
+from utils.models import Relation, Attribute, Result
 
 def create_load_screen(mss: ModelSessionState):
     
@@ -19,8 +19,8 @@ def create_load_screen(mss: ModelSessionState):
             st.session_state["upload_id"] += 1
             json_dict = json.load(uploaded_file)
             # load relations from json
-            mss.source_relation = generic_from_dict(Relation, json_dict["source_relation"])
-            mss.target_relation = generic_from_dict(Relation, json_dict["target_relation"])
+            mss.source_relation = Relation.from_dict(json_dict["source_relation"])
+            mss.target_relation = Relation.from_dict(json_dict["target_relation"])
             # set unique ids for each attribute
             for attr in mss.source_relation.attributes:
                 attr.uid = mss.get_next_uid()

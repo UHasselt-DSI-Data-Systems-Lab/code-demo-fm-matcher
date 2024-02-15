@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from enum import StrEnum
 import hashlib
 import json
@@ -13,7 +13,7 @@ class Vote(StrEnum):
     UNKNOWN = "unknown"
 
 
-@dataclass
+@dataclass(order=True)
 class Attribute:
     name: str
     description: Optional[str] = None
@@ -40,7 +40,7 @@ class Relation:
         return hashlib.blake2s(
             (
                 self.name
-                + "".join([a.digest() for a in self.attributes])
+                + "".join([a.digest() for a in sorted(self.attributes)])
                 + str(self.description)
             ).encode()
         ).hexdigest()
@@ -54,7 +54,7 @@ class Relation:
         )
 
 
-@dataclass
+@dataclass(order=True)
 class AttributePair:
     source: Attribute
     target: Attribute
@@ -66,6 +66,9 @@ class AttributePair:
 
     def __str__(self) -> str:
         return f"{self.source.name}->{self.target.name}"
+
+    def __hash__(self) -> int:
+        return hash(self.digest())
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> "AttributePair":
@@ -86,12 +89,15 @@ class Feedback:
             (
                 str(self.general)
                 + "".join(
-                    [a.digest() + self.per_attribute[a] for a in self.per_attribute]
+                    [
+                        a.digest() + self.per_attribute[a]
+                        for a in sorted(self.per_attribute)
+                    ]
                 )
                 + "".join(
                     [
                         ap.digest() + self.per_attribute_pair[ap]
-                        for ap in self.per_attribute_pair
+                        for ap in sorted(self.per_attribute_pair)
                     ]
                 )
             ).encode()
@@ -116,7 +122,7 @@ class Feedback:
 class Parameters:
     source_relation: Relation
     target_relation: Relation
-    feedback: Feedback = Feedback()
+    feedback: Feedback = field(default_factory=Feedback)
     meta: Dict[str, str] = field(default_factory=dict)
 
     def digest(self) -> str:
@@ -137,8 +143,11 @@ class Parameters:
             meta=data.get("meta", {}),
         )
 
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
 
-@dataclass
+
+@dataclass(order=True)
 class Decision:
     vote: Vote
     explanation: str
@@ -166,7 +175,7 @@ class ResultPair:
         return hashlib.blake2s(
             (
                 self.attributes.digest()
-                + "".join([d.digest() for d in self.votes])
+                + "".join([d.digest() for d in sorted(self.votes)])
                 + str(self.score)
             ).encode()
         ).hexdigest()
@@ -191,16 +200,18 @@ class Result:
         return hashlib.blake2s(
             (
                 self.parameters.digest()
-                + "".join([p.digest() + self.pairs[p].digest() for p in self.pairs])
+                + "".join(
+                    [p.digest() + self.pairs[p].digest() for p in sorted(self.pairs)]
+                )
             ).encode()
         ).hexdigest()
 
     def to_json(self) -> str:
         dct = {
-            "parameters": self.parameters.asdict(),
+            "parameters": self.parameters.to_dict(),
             "name": self.name,
             "pairs": {
-                str(k): {"key": k.asdict(), "value": v.asdict()}
+                str(k): {"key": asdict(k), "value": asdict(v)}
                 for k, v in self.pairs.items()
             },
             "meta": self.meta,
@@ -210,7 +221,6 @@ class Result:
     @staticmethod
     def from_json(jsn: str) -> Any:
         dct = json.loads(jsn)
-        dct["pairs"] = {v["key"]: v["value"] for v in dct["pairs"].values()}
         return Result.from_dict(dct)
 
     @staticmethod
@@ -219,8 +229,8 @@ class Result:
             parameters=Parameters.from_dict(data["parameters"]),
             name=data.get("name", None),
             pairs={
-                AttributePair.from_dict(k): ResultPair.from_dict(v)
-                for k, v in data["pairs"].items()
+                AttributePair.from_dict(v["key"]): ResultPair.from_dict(v["value"])
+                for v in data["pairs"].values()
             },
             meta=data.get("meta", {}),
         )
@@ -234,8 +244,8 @@ class PromptAttributePair:
     def digest(self) -> str:
         return hashlib.blake2b(
             (
-                "".join([a.digest() for a in self.sources])
-                + "".join([a.digest() for a in self.targets])
+                "".join([a.digest() for a in sorted(self.sources)])
+                + "".join([a.digest() for a in sorted(self.targets)])
             ).encode()
         ).hexdigest()
 
@@ -246,6 +256,9 @@ class PromptAttributePair:
             targets=[Attribute.from_dict(a) for a in data["targets"]],
         )
 
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
 
 @dataclass
 class Prompt:
@@ -255,9 +268,20 @@ class Prompt:
     meta: Dict[str, str] = field(default_factory=dict)
 
     def digest(self) -> str:
-        # TODO: this might be terribly wrong
+        prompt_digest = hashlib.blake2s(
+            (
+                self.prompt.get("model", "")
+                + str(self.prompt.get("temperature", 1))
+                + "".join([m["role"] + m["content"] for m in self.prompt["messages"]])
+                + str(self.prompt.get("n", 1))
+                + str(self.prompt.get("timeout", 60))
+            ).encode()
+        ).hexdigest()
+
         return hashlib.blake2s(
-            (self.parameters.digest() + self.attributes.digest()).encode()
+            (
+                self.parameters.digest() + self.attributes.digest() + prompt_digest
+            ).encode()
         ).hexdigest()
 
     @staticmethod
@@ -269,6 +293,9 @@ class Prompt:
             prompt=data["prompt"],
             meta=data.get("meta", {}),
         )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
 
 
 @dataclass
@@ -291,3 +318,6 @@ class Answer:
             valid=data.get("valid", False),
             meta=data.get("meta", {}),
         )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)

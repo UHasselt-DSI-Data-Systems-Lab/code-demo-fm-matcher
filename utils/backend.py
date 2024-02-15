@@ -59,7 +59,7 @@ def schema_match(
             },
         )
 
-    stored_params = get_parameters_by_hash(hash(parameters))
+    stored_params = get_parameters_by_hash(parameters.digest())
     if stored_params is None:
         parameters = store_parameters(parameters)
     else:
