@@ -119,7 +119,7 @@ def store_parameters(parameters: Parameters) -> Parameters:
     with get_connection(db_path) as con:
         result = con.execute(
             "INSERT INTO parameters VALUES (?, ?, ?, ?) RETURNING id;",
-            (None, now, hash(parameters), json.dumps(parameters.to_dict())),
+            (None, now, parameters.digest(), json.dumps(parameters.to_dict())),
         )
         new_id = result.fetchone()[0]
     parameters.meta["path"] = _to_path(db_path, "parameters", new_id)
@@ -141,7 +141,7 @@ def store_result(result: Result) -> Result:
                 _id_from_path(result.parameters.meta["path"]),
                 "dunno",
                 now,
-                hash(result),
+                result.digest(),
                 result.to_json(),
             ),
         )
@@ -162,7 +162,7 @@ def store_prompt(prompt: Prompt) -> Prompt:
             (
                 None,
                 _id_from_path(prompt.parameters.meta["path"]),
-                hash(prompt),
+                prompt.digest(),
                 json.dumps(prompt.to_dict()),
             ),
         )
@@ -205,7 +205,7 @@ def store_answer(
                 chatcompletion_id,
                 _id_from_path(prompt_path),
                 answer.valid,
-                hash(answer),
+                answer.digest(),
                 json.dumps(answer.to_dict()),
             ),
         )
