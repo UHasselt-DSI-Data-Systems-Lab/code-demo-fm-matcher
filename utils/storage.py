@@ -253,10 +253,13 @@ def get_prompt_by_parameters(parameters: Parameters) -> List[Prompt]:
     prompts = []
     with get_connection(db_path) as con:
         sql_result = con.execute(
-            "SELECT data FROM prompts WHERE parameters_id=?;",
+            "SELECT id, data FROM prompts WHERE parameters_id=?;",
             (_id_from_path(parameters.meta["path"]),)
         ).fetchall()
-        prompts = [Prompt.from_dict(json.loads(res[0])) for res in sql_result]
+        for result in sql_result:
+            prompt = Prompt.from_dict(json.loads(result[1]))
+            prompt.meta["path"] = _to_path(db_path, "prompts", result[0])
+            prompts.append(prompt)
     return prompts
 
 

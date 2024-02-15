@@ -17,7 +17,7 @@
   },
   {
 	"role": "user",
-	"content": "{% if feedback.general is not none %}Take the following additional information into account: {{ feedback.general }}{% endif %}"
+	"content": "{% if feedback.general is not none and (feedback.general | length) > 0 %}Take the following additional information into account: {{ feedback.general }}{% endif %}"
   },
   {
     "role": "user",
