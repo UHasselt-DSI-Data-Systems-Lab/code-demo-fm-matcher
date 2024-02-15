@@ -302,12 +302,18 @@ class Prompt:
 class Answer:
     attributes: PromptAttributePair
     answer: str
+    index: int = 0
     valid: bool = False
     meta: Dict[str, str] = field(default_factory=dict)
 
     def digest(self) -> str:
         return hashlib.blake2s(
-            (self.attributes.digest() + self.answer + str(self.valid)).encode()
+            (
+                self.attributes.digest()
+                + str(self.index)
+                + self.answer
+                + str(self.valid)
+            ).encode()
         ).hexdigest()
 
     @staticmethod

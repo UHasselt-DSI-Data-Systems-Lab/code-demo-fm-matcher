@@ -1,8 +1,9 @@
 from collections.abc import Iterable
+from enum import StrEnum
 import functools
 import json
 import os
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 from jinja2 import Environment
 from openai.types.chat.completion_create_params import (
@@ -14,89 +15,69 @@ from .models import Attribute, Parameters, Prompt, PromptAttributePair
 from .storage import store_prompt
 
 
-def build_prompts(parameters: Parameters) -> List[Prompt]:
+class PromptDesign(StrEnum):
+    """An enum of prompt designs."""
+
+    oneToOne = "1-1"
+    oneToN = "1-n"
+    nToOne = "n-1"
+    nToN = "n-n"
+
+
+def build_prompts(
+    parameters: Parameters,
+    templates: List[str] = ["oneToN", "nToOne"],
+    modes: List[PromptDesign] = [PromptDesign.oneToN, PromptDesign.nToOne],
+) -> List[Prompt]:
     """Generate OpenAI Chat Completion prompts from parameters."""
-    rendered_oneToN = [
-        Prompt(
-            parameters=parameters,
-            attributes=PromptAttributePair(
-                [source_attribute],
-                [
-                    attr
-                    for attr in parameters.target_relation.attributes
-                    if attr.included
-                ],
-            ),
-            prompt=CompletionCreateParamsNonStreaming(
-                {
-                    "model": config["OPENAI_MODEL"],
-                    "temperature": config["OPENAI_TEMPERATURE"],
-                    "messages": render_prompt(
-                        (
-                            source_attribute,
-                            [
-                                attr
-                                for attr in parameters.target_relation.attributes
-                                if attr.included
-                            ],
-                        ),
-                        parameters,
-                        "oneToN",
-                    ),
-                    "n": config["OPENAI_N"],
-                    "timeout": config["OPENAI_TIMEOUT"],
-                }
-            ),
-        )
-        for source_attribute in parameters.source_relation.attributes
-        if source_attribute.included
-    ]
-    rendered_oneToN = [store_prompt(p) for p in rendered_oneToN]
+    rendered = []
+    for template, mode in zip(templates, modes):
+        source_card, target_card = mode.split("-")
+        sources = [
+            attr for attr in parameters.source_relation.attributes if attr.included
+        ]
+        if source_card == "n":
+            sources = [sources]
 
-    rendered_nToOne = [
-        Prompt(
-            parameters=parameters,
-            attributes=PromptAttributePair(
-                [
-                    attr
-                    for attr in parameters.source_relation.attributes
-                    if attr.included
-                ],
-                [target_attribute],
-            ),
-            prompt=CompletionCreateParamsNonStreaming(
-                {
-                    "model": config["OPENAI_MODEL"],
-                    "temperature": config["OPENAI_TEMPERATURE"],
-                    "messages": render_prompt(
-                        (
-                            [
-                                attr
-                                for attr in parameters.source_relation.attributes
-                                if attr.included
-                            ],
-                            target_attribute,
-                        ),
-                        parameters,
-                        "nToOne",
-                    ),
-                    "n": config["OPENAI_N"],
-                    "timeout": config["OPENAI_TIMEOUT"],
-                }
-            ),
-        )
-        for target_attribute in parameters.target_relation.attributes
-        if target_attribute.included
-    ]
-    rendered_nToOne = [store_prompt(p) for p in rendered_nToOne]
+        targets = [
+            attr for attr in parameters.target_relation.attributes if attr.included
+        ]
+        if target_card == "n":
+            targets = [targets]
 
-    return rendered_oneToN + rendered_nToOne
+        for source in sources:
+            for target in targets:
+                rendered.append(
+                    Prompt(
+                        parameters=parameters,
+                        attributes=PromptAttributePair(
+                            source if source_card == "n" else [source],
+                            target if target_card == "n" else [target],
+                        ),
+                        prompt=CompletionCreateParamsNonStreaming(
+                            {
+                                "model": config["OPENAI_MODEL"],
+                                "temperature": config["OPENAI_TEMPERATURE"],
+                                "messages": render_prompt(
+                                    (source, target),
+                                    parameters,
+                                    template,
+                                ),
+                                "n": config["OPENAI_N"],
+                                "timeout": config["OPENAI_TIMEOUT"],
+                            }
+                        ),
+                    )
+                )
+
+    rendered = [store_prompt(prompt) for prompt in rendered]
+    return rendered
 
 
 @functools.cache
 def read_prompt_template(template: str) -> List[Dict[str, str]]:
     """Read a prompt template from a file."""
-    with open(os.path.join("resources", f"prompt_template_{template}.json"), "r") as f:
+    with open(os.path.join(config["TEMPLATE_DIR"], f"{template}.json"), "r") as f:
         tpl = json.load(f)
     return tpl
 
@@ -119,7 +100,11 @@ def template_iterator(
 
 
 def render_prompt(
-    prompt_data: Tuple[Any, Any], parameters: Parameters, template: str
+    prompt_data: Tuple[
+        Union[List[Attribute], Attribute], Union[List[Attribute], Attribute]
+    ],
+    parameters: Parameters,
+    template: str,
 ) -> List[Dict[str, str]]:
     """Render a single prompt from a tuple of source and target attributes."""
     sources = prompt_data[0]

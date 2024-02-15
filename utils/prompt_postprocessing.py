@@ -26,12 +26,14 @@ def postprocess_answers(parameters: Parameters, answers: List[Answer]) -> Result
             answer.attributes.sources,
             answer.attributes.targets,
         ):
-            if len(answer.attributes.sources) == 1:
+            if len(answer.attributes.sources) == len(answer.attributes.targets) == 1:
+                raise NotImplementedError("1-to-1 matching not yet implemented.")
+            elif len(answer.attributes.sources) == 1:
                 look_for = trgt.name
             elif len(answer.attributes.targets) == 1:
                 look_for = src.name
             else:
-                raise NotImplementedError("N-to-N matching cannot be postprocessed, yet.")
+                look_for = f"{src.name},{trgt.name}"
             if look_for in reversed_json:
                 vote = Vote[reversed_json[look_for].upper()]
             else:

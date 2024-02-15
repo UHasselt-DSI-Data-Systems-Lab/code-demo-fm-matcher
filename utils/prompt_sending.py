@@ -39,6 +39,7 @@ def result_into_answers(result: ChatCompletion, prompt: Prompt) -> List[Answer]:
     return [
         Answer(
             prompt.attributes,
+            index=choice.index,
             answer=choice.message.content,
         )
         for choice in result.choices
