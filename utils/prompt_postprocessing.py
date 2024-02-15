@@ -35,7 +35,11 @@ def postprocess_answers(parameters: Parameters, answers: List[Answer]) -> Result
             else:
                 look_for = f"{src.name},{trgt.name}"
             if look_for in reversed_json:
-                vote = Vote[reversed_json[look_for].upper()]
+                try:
+                    vote = Vote[reversed_json[look_for].upper()]
+                except KeyError:
+                    # the JSON is malformed at this point.
+                    vote = Vote.UNKNOWN
             else:
                 vote = Vote.UNKNOWN
             result_pair = result.pairs[AttributePair(src, trgt)]
