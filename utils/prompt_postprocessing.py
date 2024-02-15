@@ -18,7 +18,7 @@ def postprocess_answers(parameters: Parameters, answers: List[Answer]) -> Result
     result = _generate_empty_result(parameters)
     for answer in answers:
         reversed_json = {
-            attribute: decision
+            str(attribute): decision
             for decision, attribute_list in extract_json(answer).items()
             for attribute in attribute_list
         }
