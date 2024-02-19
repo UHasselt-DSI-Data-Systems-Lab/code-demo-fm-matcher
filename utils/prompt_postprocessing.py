@@ -27,7 +27,8 @@ def postprocess_answers(parameters: Parameters, answers: List[Answer]) -> Result
             answer.attributes.targets,
         ):
             if len(answer.attributes.sources) == len(answer.attributes.targets) == 1:
-                raise NotImplementedError("1-to-1 matching not yet implemented.")
+                # by convention, I use the target attribute name for 1 to 1
+                look_for = trgt.name
             elif len(answer.attributes.sources) == 1:
                 look_for = trgt.name
             elif len(answer.attributes.targets) == 1:
