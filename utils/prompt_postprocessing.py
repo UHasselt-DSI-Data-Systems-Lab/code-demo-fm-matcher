@@ -44,7 +44,7 @@ def postprocess_answers(parameters: Parameters, answers: List[Answer]) -> Result
             else:
                 vote = Vote.UNKNOWN
             result_pair = result.pairs[AttributePair(src, trgt)]
-            decision = Decision(vote=vote, explanation=answer.answer)
+            decision = Decision(vote=vote, explanation=answer.answer, answer=answer)
             result_pair.votes.append(decision)
     return result
 

@@ -147,95 +147,6 @@ class Parameters:
         return asdict(self)
 
 
-@dataclass(order=True)
-class Decision:
-    vote: Vote
-    explanation: str
-
-    def digest(self) -> str:
-        return hashlib.blake2s(
-            (self.vote.value + self.explanation).encode()
-        ).hexdigest()
-
-    @staticmethod
-    def from_dict(data: Dict[str, Any]) -> "Decision":
-        return Decision(
-            vote=Vote(data["vote"]),
-            explanation=data["explanation"],
-        )
-
-
-@dataclass
-class ResultPair:
-    attributes: AttributePair
-    votes: List[Decision] = field(default_factory=list)
-    score: float = 0.0
-
-    def digest(self) -> str:
-        return hashlib.blake2s(
-            (
-                self.attributes.digest()
-                + "".join([d.digest() for d in sorted(self.votes)])
-                + str(self.score)
-            ).encode()
-        ).hexdigest()
-
-    @staticmethod
-    def from_dict(data: Dict[str, Any]) -> "ResultPair":
-        return ResultPair(
-            attributes=AttributePair.from_dict(data["attributes"]),
-            votes=[Decision.from_dict(v) for v in data["votes"]],
-            score=data.get("score", 0.0),
-        )
-
-
-@dataclass
-class Result:
-    parameters: Parameters
-    name: Optional[str] = None
-    pairs: Dict[AttributePair, ResultPair] = field(default_factory=dict)
-    meta: Dict[str, str] = field(default_factory=dict)
-
-    def digest(self) -> str:
-        return hashlib.blake2s(
-            (
-                self.parameters.digest()
-                + "".join(
-                    [p.digest() + self.pairs[p].digest() for p in sorted(self.pairs)]
-                )
-            ).encode()
-        ).hexdigest()
-
-    def to_json(self) -> str:
-        dct = {
-            "parameters": self.parameters.to_dict(),
-            "name": self.name,
-            "pairs": {
-                str(k): {"key": asdict(k), "value": asdict(v)}
-                for k, v in self.pairs.items()
-            },
-            "meta": self.meta,
-        }
-        return json.dumps(dct)
-
-    @staticmethod
-    def from_json(jsn: str) -> Any:
-        dct = json.loads(jsn)
-        return Result.from_dict(dct)
-
-    @staticmethod
-    def from_dict(data: Dict[str, Any]) -> "Result":
-        return Result(
-            parameters=Parameters.from_dict(data["parameters"]),
-            name=data.get("name", None),
-            pairs={
-                AttributePair.from_dict(v["key"]): ResultPair.from_dict(v["value"])
-                for v in data["pairs"].values()
-            },
-            meta=data.get("meta", {}),
-        )
-
-
 @dataclass
 class PromptAttributePair:
     sources: List[Attribute] = field(default_factory=list)
@@ -328,3 +239,97 @@ class Answer:
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
+
+
+@dataclass(order=True)
+class Decision:
+    vote: Vote
+    explanation: str
+    answer: Optional[Answer] = None
+
+    def digest(self) -> str:
+        return hashlib.blake2s(
+            (self.vote.value + self.explanation).encode()
+        ).hexdigest()
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> "Decision":
+        answer = data.get("answer", {})
+        if answer:
+            answer = Answer.from_dict(answer)
+        return Decision(
+            vote=Vote(data["vote"]),
+            explanation=data["explanation"],
+            answer=answer,
+        )
+
+
+@dataclass
+class ResultPair:
+    attributes: AttributePair
+    votes: List[Decision] = field(default_factory=list)
+    score: float = 0.0
+
+    def digest(self) -> str:
+        return hashlib.blake2s(
+            (
+                self.attributes.digest()
+                + "".join([d.digest() for d in sorted(self.votes)])
+                + str(self.score)
+            ).encode()
+        ).hexdigest()
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> "ResultPair":
+        return ResultPair(
+            attributes=AttributePair.from_dict(data["attributes"]),
+            votes=[Decision.from_dict(v) for v in data["votes"]],
+            score=data.get("score", 0.0),
+        )
+
+
+@dataclass
+class Result:
+    parameters: Parameters
+    name: Optional[str] = None
+    pairs: Dict[AttributePair, ResultPair] = field(default_factory=dict)
+    meta: Dict[str, str] = field(default_factory=dict)
+
+    def digest(self) -> str:
+        return hashlib.blake2s(
+            (
+                self.parameters.digest()
+                + "".join(
+                    [p.digest() + self.pairs[p].digest() for p in sorted(self.pairs)]
+                )
+            ).encode()
+        ).hexdigest()
+
+    def to_json(self) -> str:
+        dct = {
+            "parameters": self.parameters.to_dict(),
+            "name": self.name,
+            "pairs": {
+                str(k): {"key": asdict(k), "value": asdict(v)}
+                for k, v in self.pairs.items()
+            },
+            "meta": self.meta,
+        }
+        return json.dumps(dct)
+
+    @staticmethod
+    def from_json(jsn: str) -> Any:
+        dct = json.loads(jsn)
+        return Result.from_dict(dct)
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> "Result":
+        return Result(
+            parameters=Parameters.from_dict(data["parameters"]),
+            name=data.get("name", None),
+            pairs={
+                AttributePair.from_dict(v["key"]): ResultPair.from_dict(v["value"])
+                for v in data["pairs"].values()
+            },
+            meta=data.get("meta", {}),
+        )
