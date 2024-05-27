@@ -237,6 +237,18 @@ class Answer:
             meta=data.get("meta", {}),
         )
 
+    def __lt__(self, other: "Answer") -> bool:
+        return self.index < other.index
+
+    def __le__(self, other: "Answer") -> bool:
+        return self.index <= other.index
+
+    def __gt__(self, other: "Answer") -> bool:
+        return self.index > other.index
+
+    def __ge__(self, other: "Answer") -> bool:
+        return self.index >= other.index
+
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 
