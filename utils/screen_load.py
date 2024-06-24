@@ -1,3 +1,4 @@
+import os
 import json
 from typing import Optional
 import streamlit as st
@@ -15,6 +16,34 @@ def create_load_screen(mss: ModelSessionState):
         if "upload_id" not in st.session_state:
             st.session_state["upload_id"] = 0
         uploaded_file = st.file_uploader("Choose a file", type=["json"], key=f"upload.{st.session_state['upload_id']}")
+        # hardcode a few example relations for presentation purposes
+        st.markdown("Or choose a pre-defined example")
+        example_file_names = list(filter(lambda f: f.endswith(".json"), os.listdir("test_inputs")))
+        grid = [
+            st.columns(4) for _ in range(len(example_file_names)//4+1)
+        ]
+        for i, file_name in enumerate(example_file_names):
+            x, y = divmod(i, 4)
+            with grid[x][y]:
+                nice_name = {
+                    "Admissions_Condition_Occurrence.json": "Admission -> Condition Occurrence",
+                    "Admissions_Visit_Detail.json": "Admissions -> Visit Detail",
+                    "Admissions_Visit_Occurrence.json": "Admissions -> Visit Occurrence",
+                    "Diagnoses_ICD_Condition_Occurrence.json": "Diagnoses ICD -> Condition Occurrence",
+                    "Labevents_Measurement.json": "Labevents -> Measurement",
+                    "Patients_Person.json": "Patients -> Person",
+                    "Prescriptions_Drug_Exposure.json": "Prescriptions -> Drug Exposure",
+                    "Services_Visit_Detail.json": "Services -> Visit Detail",
+                    "simple_example.json": "Simple Example",
+                    "Transfers_Visit_Detail.json": "Transfers -> Visit Detail",
+                }[file_name]
+                chosen_name = st.button(
+                    nice_name,
+                    key=file_name,
+                )
+                if chosen_name:
+                    uploaded_file = open(f"test_inputs/{file_name}", "rb")
+
         if uploaded_file is not None:
             st.session_state["upload_id"] += 1
             json_dict = json.load(uploaded_file)
