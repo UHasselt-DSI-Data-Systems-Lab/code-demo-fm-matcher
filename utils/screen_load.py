@@ -5,6 +5,7 @@ import streamlit as st
 from utils.model_session_state import ModelSessionState
 from utils.models import Relation, Attribute, Result
 
+
 def create_load_screen(mss: ModelSessionState):
     
     st.header("Input data")
@@ -63,12 +64,26 @@ def create_load_screen(mss: ModelSessionState):
         if mss.source_relation is not None:
             st.subheader(f"Source Relation: {mss.source_relation.name}")
             _display_relation(mss.source_relation, names_fixed=mss.input_fixed, result=mss.result, compare_to=mss.compare_to)
+            _create_add_attribute_button(mss, "source")
 
     with col2:
         if mss.target_relation is not None:
             st.subheader(f"Target Relation: {mss.target_relation.name}")
             _display_relation(mss.target_relation, names_fixed=mss.input_fixed, result=mss.result, compare_to=mss.compare_to)
+            _create_add_attribute_button(mss, "target")
 
+
+def _create_add_attribute_button(mss: ModelSessionState, side: str) -> None:
+    if not mss.input_fixed and st.button("Add attribute", key=f"add_{side}_attribute"):
+        getattr(mss, f"{side}_relation").attributes.append(
+            Attribute(
+                name="Name...",
+                description="Description...",
+                included=False,
+                uid=mss.get_next_uid(),
+            )
+        )
+        st.rerun()
 
 
 def _display_relation(relation: Relation, names_fixed: bool = False, result: Optional[Result] = None, compare_to: Optional[Result] = None):
@@ -83,6 +98,9 @@ def _display_relation(relation: Relation, names_fixed: bool = False, result: Opt
         attr.description = st.session_state[session_key]
     def on_change_attrincl(attr: Attribute, session_key: str):
         attr.included = st.session_state[session_key]
+    def on_click_attrrem(attr: Attribute, session_key: str):
+        # TODO
+        pass
 
     # field for relation description
     with st.expander("Relation details"):
@@ -121,6 +139,8 @@ def _display_relation(relation: Relation, names_fixed: bool = False, result: Opt
             if attr_key_incl not in st.session_state:
                 st.session_state[attr_key_incl] = attr.included
             st.checkbox("Include", key=attr_key_incl, on_change=on_change_attrincl, args=(attr, attr_key_incl), disabled=names_fixed)
+            attr_key_remove = f"{relation.name}.Attr{i}.remove"
+            st.button("Remove", key=attr_key_remove, on_click=on_attrrem, args=(attr, attr_key_remove))
 
             # show version of description from results and compare-to if available
             if result is not None and attr.uid is not None:

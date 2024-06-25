@@ -42,8 +42,8 @@ def check_password():
     return False
 
 
-if not check_password():
-    st.stop()
+#if not check_password():
+#    st.stop()
 
 
 # Load session state, creating a new object if none exists
@@ -68,6 +68,7 @@ def _submit_button(mss: ModelSessionState):
                     feedback=deepcopy(mss.feedback),
                 )
                 result = schema_match(params)
+
                 # st.info("Debug info: manual sleep time for testing purposes!")
                 # time.sleep(1)
                 # Change the name of the result to something unique
