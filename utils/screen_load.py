@@ -9,7 +9,6 @@ from utils.models import Relation, Attribute, Result
 def create_load_screen(mss: ModelSessionState):
     
     st.header("Input data")
-
     # if editing still possible: allow uploading a file
     if not mss.input_fixed:
         # unique id to refresh file upload on each rerun
@@ -98,9 +97,8 @@ def _display_relation(relation: Relation, names_fixed: bool = False, result: Opt
         attr.description = st.session_state[session_key]
     def on_change_attrincl(attr: Attribute, session_key: str):
         attr.included = st.session_state[session_key]
-    def on_click_attrrem(attr: Attribute, session_key: str):
-        # TODO
-        pass
+    def on_click_attrrem(relation: Relation, attr: Attribute, session_key: str) -> None:
+        relation.attributes.remove(attr)
 
     # field for relation description
     with st.expander("Relation details"):
@@ -125,22 +123,25 @@ def _display_relation(relation: Relation, names_fixed: bool = False, result: Opt
     for i, attr in enumerate(relation.attributes):
         # Attribute name
         attr_key_name = f"{relation.name}.Attr{i}.name"
-        if attr_key_name not in st.session_state:
-            st.session_state[attr_key_name] = attr.name
+        # TODO: what are those checks needed for?
+        # if attr_key_name not in st.session_state:
+        st.session_state[attr_key_name] = attr.name
         st.text_input(f"Attribute {i+1}", key=attr_key_name, on_change=on_change_attrname, args=(attr, attr_key_name), disabled=names_fixed)
         with st.expander("details"):
             # Attribute description
             attr_key_descr = f"{relation.name}.Attr{i}.description"
-            if attr_key_descr not in st.session_state:
-                st.session_state[attr_key_descr] = attr.description
+            # TODO: what are those checks needed for?
+            # if attr_key_descr not in st.session_state:
+            st.session_state[attr_key_descr] = attr.description
             st.text_area("description", key=attr_key_descr, on_change=on_change_attrdescr, args=(attr, attr_key_descr), label_visibility="collapsed")
             # Attribute included checkbox
             attr_key_incl = f"{relation.name}.Attr{i}.included"
-            if attr_key_incl not in st.session_state:
-                st.session_state[attr_key_incl] = attr.included
+            # TODO: what are those checks needed for?
+            # if attr_key_incl not in st.session_state:
+            st.session_state[attr_key_incl] = attr.included
             st.checkbox("Include", key=attr_key_incl, on_change=on_change_attrincl, args=(attr, attr_key_incl), disabled=names_fixed)
             attr_key_remove = f"{relation.name}.Attr{i}.remove"
-            st.button("Remove", key=attr_key_remove, on_click=on_attrrem, args=(attr, attr_key_remove))
+            st.button("Remove", key=attr_key_remove, on_click=on_click_attrrem, args=(relation, attr, attr_key_remove))
 
             # show version of description from results and compare-to if available
             if result is not None and attr.uid is not None:
