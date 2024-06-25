@@ -1,4 +1,5 @@
 from copy import deepcopy
+import hmac
 import time
 import streamlit as st
 from utils.backend import schema_match
@@ -14,33 +15,66 @@ st.set_page_config(layout="wide")
 st.title("FM-Matcher")
 st.text("Schema Matching for Health Data using Foundation Models")
 
+
+def check_password():
+    """Use the most simple login solution as described by streamlit."""
+
+    def password_entered():
+        if hmac.compare_digest(st.session_state["password"], st.secrets["password"]):
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]
+        else:
+            st.session_state["password_correct"] = False
+
+    if st.session_state.get("password_correct", False):
+        return True
+
+    st.text_input(
+        "Give me the magic phrase",
+        type="password",
+        on_change=password_entered,
+        key="password",
+    )
+
+    if "password_correct" in st.session_state:
+        st.error("Password incorrect")
+
+    return False
+
+
+if not check_password():
+    st.stop()
+
+
 # Load session state, creating a new object if none exists
 session_state_obj = st.session_state.get("session_state", None)
 if session_state_obj is None:
     st.session_state["session_state"] = session_state_obj = ModelSessionState()
 
+
 def _submit_button(mss: ModelSessionState):
     if mss.source_relation is not None and mss.target_relation is not None:
-            st.divider()
-            button_text = "Run Schema Matching"
-            if len(mss.all_results) > 0:
-                button_text = "Run Schema Matching Again"
-            if st.button(button_text):
-                mss.input_fixed = True
-                with st.spinner("Matching schemas..."):
-                    # create a deepcopy of all parameters to avoid changing params (e.g. descriptions) of older experiments in the visualization when changing descriptions in the input
-                    params = Parameters(
-                        source_relation=deepcopy(mss.source_relation),
-                        target_relation=deepcopy(mss.target_relation),
-                        feedback=deepcopy(mss.feedback)
-                    )
-                    result = schema_match(params)
-                    #st.info("Debug info: manual sleep time for testing purposes!")
-                    #time.sleep(1)
-                    # Change the name of the result to something unique
-                    result.name = f"Experiment {mss.get_next_experiment_id()}"
-                    mss.all_results.append(result)
-                st.rerun()
+        st.divider()
+        button_text = "Run Schema Matching"
+        if len(mss.all_results) > 0:
+            button_text = "Run Schema Matching Again"
+        if st.button(button_text):
+            mss.input_fixed = True
+            with st.spinner("Matching schemas..."):
+                # create a deepcopy of all parameters to avoid changing params (e.g. descriptions) of older experiments in the visualization when changing descriptions in the input
+                params = Parameters(
+                    source_relation=deepcopy(mss.source_relation),
+                    target_relation=deepcopy(mss.target_relation),
+                    feedback=deepcopy(mss.feedback),
+                )
+                result = schema_match(params)
+                # st.info("Debug info: manual sleep time for testing purposes!")
+                # time.sleep(1)
+                # Change the name of the result to something unique
+                result.name = f"Experiment {mss.get_next_experiment_id()}"
+                mss.all_results.append(result)
+            st.rerun()
+
 
 # The sidebar is used to reset the app and select the result to visualize
 with st.sidebar:
@@ -52,21 +86,39 @@ with st.sidebar:
         # Create a new object to store session state
         st.session_state["session_state"] = session_state_obj = ModelSessionState()
         st.rerun()
-    
+
     # Select result version(s) to visualize
     num_exps = len(session_state_obj.all_results)
     if num_exps >= 1:
-        selected = st.selectbox("Selected result", options=reversed([result.name for result in session_state_obj.all_results]), index=0)
+        selected = st.selectbox(
+            "Selected result",
+            options=reversed([result.name for result in session_state_obj.all_results]),
+            index=0,
+        )
         if selected is not None:
-            session_state_obj.result = next(result for result in session_state_obj.all_results if result.name == selected)
+            session_state_obj.result = next(
+                result
+                for result in session_state_obj.all_results
+                if result.name == selected
+            )
         else:
             session_state_obj.result = None
             session_state_obj.compare_to = None
         # only show compare-to option if at least 2 experiments exist. Note that this can be None to disable comparison
         if selected is not None and num_exps >= 2:
-            compare_to = st.selectbox("Compare to", options=reversed([result.name for result in session_state_obj.all_results]), index=None)
+            compare_to = st.selectbox(
+                "Compare to",
+                options=reversed(
+                    [result.name for result in session_state_obj.all_results]
+                ),
+                index=None,
+            )
             if compare_to is not None:
-                session_state_obj.compare_to = next(result for result in session_state_obj.all_results if result.name == compare_to)
+                session_state_obj.compare_to = next(
+                    result
+                    for result in session_state_obj.all_results
+                    if result.name == compare_to
+                )
             else:
                 session_state_obj.compare_to = None
 
