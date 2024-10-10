@@ -13,6 +13,6 @@ default_config = {
 
 config = {
     # use the environment variables if set (typecasted to the type given in default_config), other use default_config values
-    k: type(default_config[k])(os.getenv(k, v))
+    k: None if os.getenv(k, v) == "None" else type(default_config[k])(os.getenv(k, v))
     for k, v in default_config.items()
 }
