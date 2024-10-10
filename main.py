@@ -1,6 +1,5 @@
 from copy import deepcopy
 import hmac
-import time
 import streamlit as st
 from utils.backend import schema_match
 from utils.models import Parameters
@@ -16,7 +15,7 @@ st.title("FM-Matcher")
 st.text("Schema Matching for Health Data using Foundation Models")
 
 
-def check_password():
+def check_password() -> bool:
     """Use the most simple login solution as described by streamlit."""
 
     def password_entered():
@@ -42,7 +41,16 @@ def check_password():
     return False
 
 
-if not check_password():
+def password_set() -> bool:
+    """Check whether a password is set via streamlits secrets management."""
+    try:
+        return "password" in st.secrets
+    except FileNotFoundError:
+        # indicates that no secrets.toml is available, thus no password is set
+        return False
+
+
+if password_set() and not check_password():
     st.stop()
 
 
