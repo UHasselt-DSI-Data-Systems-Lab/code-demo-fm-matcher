@@ -131,6 +131,8 @@ with st.sidebar:
             else:
                 session_state_obj.compare_to = None
 
+# TODO: bug: assigning new uids should be looked at once again, it breaks when clicking around too much.
+# reproduce: add one or two attributes before choosing simple example, the run schema matching --> this will error out
 # Data loading part
 create_load_screen(session_state_obj)
 
