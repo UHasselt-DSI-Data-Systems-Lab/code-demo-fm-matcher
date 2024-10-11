@@ -13,12 +13,16 @@ class Vote(StrEnum):
     UNKNOWN = "unknown"
 
 
+class Side(StrEnum):
+    SOURCE = "source"
+    TARGET = "target"
+
+
 @dataclass(order=True)
 class Attribute:
     name: str
     description: Optional[str] = None
     included: bool = field(default=True, compare=False)
-    uid: Optional[int] = field(default=None, compare=False)
 
     def digest(self) -> str:
         return hashlib.blake2s(
@@ -33,6 +37,7 @@ class Attribute:
 @dataclass
 class Relation:
     name: str
+    side: Side
     attributes: List[Attribute] = field(default_factory=list)
     description: Optional[str] = None
 
@@ -40,6 +45,7 @@ class Relation:
         return hashlib.blake2s(
             (
                 self.name
+                + self.side.value
                 + "".join([a.digest() for a in sorted(self.attributes)])
                 + str(self.description)
             ).encode()
@@ -49,6 +55,7 @@ class Relation:
     def from_dict(data: Dict[str, Any]) -> "Relation":
         return Relation(
             name=data["name"],
+            side=data["side"],
             attributes=[Attribute.from_dict(a) for a in data["attributes"]],
             description=data.get("description", None),
         )

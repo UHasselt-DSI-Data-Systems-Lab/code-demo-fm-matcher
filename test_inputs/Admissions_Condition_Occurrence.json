@@ -1,6 +1,7 @@
 {
   "source_relation": {
     "name": "admissions",
+	"side": "source",
     "description": "The admissions table gives information regarding a patient\u2019s admission to the hospital. Since each unique hospital visit for a patient is assigned a unique hadm_id, the admissions table can be considered as a definition table for hadm_id. Information available includes timing information for admission and discharge, demographic information, the source of the admission, and so on.",
     "attributes": [
       {
@@ -67,6 +68,7 @@
   },
   "target_relation": {
     "name": "CONDITION_OCCURRENCE",
+	"side": "target",
     "description": "This table contains records of Events of a Person suggesting the presence of a disease or medical condition stated as a diagnosis, a sign, or a symptom, which is either observed by a Provider or reported by the patient.",
     "attributes": [
       {

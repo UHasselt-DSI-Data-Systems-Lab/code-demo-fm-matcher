@@ -1,6 +1,7 @@
 {
   "source_relation": {
     "name": "prescriptions",
+	"side": "source",
     "description": "The prescriptions table provides information about prescribed medications. Information includes the name of the drug, coded identifiers including the Generic Sequence Number (GSN) and National Drug Code (NDC), the product strength, the formulary dose, and the route of administration.",
     "attributes": [
       {
@@ -91,6 +92,7 @@
   },
   "target_relation": {
     "name": "DRUG_EXPOSURE",
+	"side": "target",
     "description": "This table captures records about the exposure to a Drug ingested or otherwise introduced into the body. A Drug is a biochemical substance formulated in such a way that when administered to a Person it will exert a certain biochemical effect on the metabolism. Drugs include prescription and over-the-counter medicines, vaccines, and large-molecule biologic therapies. Radiological devices ingested or applied locally do not count as Drugs.",
     "attributes": [
       {

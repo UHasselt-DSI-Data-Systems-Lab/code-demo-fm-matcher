@@ -4,7 +4,7 @@ import hmac
 import streamlit as st
 
 from utils.backend import schema_match
-from utils.models import Parameters, Vote
+from utils.models import Parameters, Relation, Vote
 from utils.screen_feedback import create_feedback_screen
 from utils.screen_load import create_load_screen
 from utils.screen_visualize import create_visualize_screen
@@ -61,28 +61,45 @@ if session_state_obj is None:
     st.session_state["session_state"] = session_state_obj = ModelSessionState()
 
 
-def _submit_button(mss: ModelSessionState):
-    if mss.source_relation is not None and mss.target_relation is not None:
-        button_text = "Run Schema Matching"
-        if len(mss.all_results) > 0:
-            button_text = "Run Schema Matching Again"
-        if st.button(button_text):
-            mss.input_fixed = True
-            with st.spinner("Matching schemas..."):
-                # create a deepcopy of all parameters to avoid changing params (e.g. descriptions) of older experiments in the visualization when changing descriptions in the input
-                params = Parameters(
-                    source_relation=deepcopy(mss.source_relation),
-                    target_relation=deepcopy(mss.target_relation),
-                    feedback=deepcopy(mss.feedback),
-                )
-                result = schema_match(params)
+def _is_input_valid(relation: Relation) -> bool:
+    if relation is None:
+        return False
+    attrs = set()
+    for attr in relation.attributes:
+        if attr.name in attrs:
+            return False
+        attrs = attrs.union({attr.name})
+    return True
 
-                # st.info("Debug info: manual sleep time for testing purposes!")
-                # time.sleep(1)
-                # Change the name of the result to something unique
-                result.name = f"Experiment {mss.get_next_experiment_id()}"
-                mss.all_results.append(result)
-            st.rerun()
+
+def _submit_button(mss: ModelSessionState):
+    submittable = True
+    if not _is_input_valid(mss.source_relation) or not _is_input_valid(
+        mss.target_relation
+    ):
+        submittable = False
+    button_text = "Run Schema Matching"
+    if len(mss.all_results) > 0:
+        button_text = "Run Schema Matching Again"
+    if st.button(button_text, disabled=not submittable):
+        mss.input_fixed = True
+        with st.spinner("Matching schemas..."):
+            # create a deepcopy of all parameters to avoid changing params 
+            # (e.g. descriptions) of older experiments in the visualization
+            # when changing descriptions in the input
+            params = Parameters(
+                source_relation=deepcopy(mss.source_relation),
+                target_relation=deepcopy(mss.target_relation),
+                feedback=deepcopy(mss.feedback),
+            )
+            result = schema_match(params)
+
+            # st.info("Debug info: manual sleep time for testing purposes!")
+            # time.sleep(1)
+            # Change the name of the result to something unique
+            result.name = f"Experiment {mss.get_next_experiment_id()}"
+            mss.all_results.append(result)
+        st.rerun()
 
 
 def _create_sql_button(mss: ModelSessionState) -> None:
@@ -161,8 +178,6 @@ with st.sidebar:
             else:
                 session_state_obj.compare_to = None
 
-# TODO: bug: assigning new uids should be looked at once again, it breaks when clicking around too much.
-# reproduce: add one or two attributes before choosing simple example, the run schema matching --> this will error out
 # Data loading part
 create_load_screen(session_state_obj)
 

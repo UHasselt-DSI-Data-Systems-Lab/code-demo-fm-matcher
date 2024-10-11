@@ -97,35 +97,29 @@ def create_visualize_screen(mss: ModelSessionState):
         help="Only show edges with at least this many votes",
     )
 
-    # Quickly verify that all attributes have a uid
-    for attr in result.parameters.source_relation.attributes:
-        if attr.uid is None:
-            st.error(f"Attribute {attr.name} uid is None")
-            return
-    for attr in result.parameters.target_relation.attributes:
-        if attr.uid is None:
-            st.error(f"Attribute {attr.name} uid is None")
-            return
-
     # Lookup tables before constructing the graph
-    left_attr_lookup: dict[int, Attribute] = {attr.uid: attr for attr in result.parameters.source_relation.attributes}  # type: ignore
-    right_attr_lookup: dict[int, Attribute] = {attr.uid: attr for attr in result.parameters.target_relation.attributes}  # type: ignore
+    left_attr_lookup: dict[str, Attribute] = {
+        attr.name: attr for attr in result.parameters.source_relation.attributes
+    }
+    right_attr_lookup: dict[str, Attribute] = {
+        attr.name: attr for attr in result.parameters.target_relation.attributes
+    }
 
     # this will be the order in which attributes are displayed
-    left_attr_uids = sorted(left_attr_lookup.keys())
-    right_attr_uids = sorted(right_attr_lookup.keys())
+    left_attr_names = [f"src_{a.name}" for a in result.parameters.source_relation.attributes]
+    right_attr_names = [f"trg_{a.name}" for a in result.parameters.target_relation.attributes]
 
-    elements: list[dict[str, Any]] = []
-    for attr in (
-        result.parameters.source_relation.attributes
-        + result.parameters.target_relation.attributes
-    ):
-        elements.append(
-            {
-                "data": {"id": str(attr.uid), "name": attr.name},
-                "style": {"opacity": 1.0 if attr.included else 0.5},
-            }
-        )
+    elements: list[dict[str, Any]] = [
+        {
+            "data": {"id": f"src_{attr.name}", "name": attr.name},
+            "style": {"opacity": 1.0 if attr.included else 0.5}
+        } for attr in result.parameters.source_relation.attributes
+    ] + [
+        {
+            "data": {"id": f"trg_{attr.name}", "name": attr.name},
+            "style": {"opacity": 1.0 if attr.included else 0.5}
+        } for attr in result.parameters.target_relation.attributes
+    ]
 
     # Add edges (=votes) to the graph
     elements.extend(
@@ -185,25 +179,25 @@ def create_visualize_screen(mss: ModelSessionState):
     # The custom layout force a bipartite graph
     layout = {"name": "fcose", "animationDuration": 0}
     layout["alignmentConstraint"] = {
-        "horizontal": [[str(left_attr_uids[0]), str(right_attr_uids[0])]],
+        "horizontal": [[left_attr_names[0], right_attr_names[0]]],
         "vertical": [
-            [str(uid) for uid in left_attr_uids],
-            [str(uid) for uid in right_attr_uids],
+            left_attr_names,
+            right_attr_names,
         ],
     }
     layout["relativePlacementConstraint"] = [
-        {"left": str(left_attr_uids[0]), "right": str(right_attr_uids[0]), "gap": 600}
+        {"left": left_attr_names[0], "right": right_attr_names[0], "gap": 600}
     ]
     layout["relativePlacementConstraint"] += [
-        {"top": str(uid_a), "bottom": str(uid_b), "gap": 80}
-        for uid_a, uid_b in zip(left_attr_uids[:-1], left_attr_uids[1:])
+        {"top": name_a, "bottom": name_b, "gap": 80}
+        for name_a, name_b in zip(left_attr_names[:-1], left_attr_names[1:])
     ]
     layout["relativePlacementConstraint"] += [
-        {"top": str(uid_a), "bottom": str(uid_b), "gap": 80}
-        for uid_a, uid_b in zip(right_attr_uids[:-1], right_attr_uids[1:])
+        {"top": name_a, "bottom": name_b, "gap": 80}
+        for name_a, name_b in zip(right_attr_names[:-1], right_attr_names[1:])
     ]
 
-    max_num_attrs = max(len(left_attr_uids), len(right_attr_uids))
+    max_num_attrs = max(len(left_attr_names), len(right_attr_names))
     selected = cytoscape(
         elements,
         stylesheet,
@@ -215,17 +209,17 @@ def create_visualize_screen(mss: ModelSessionState):
     )
 
     # store selected nodes in session state
-    mss.selected_attrs = [int(node_id) for node_id in selected["nodes"]]
+    mss.selected_attrs = selected["nodes"]
 
     selected_source = [
         attr
         for attr in result.parameters.source_relation.attributes
-        if attr.uid in mss.selected_attrs
+        if f"src_{attr.name}" in mss.selected_attrs
     ]
     selected_target = [
         attr
         for attr in result.parameters.target_relation.attributes
-        if attr.uid in mss.selected_attrs
+        if f"trg_{attr.name}" in mss.selected_attrs
     ]
 
     # If exactly 1 source and target attribute selected: show more info on this pair
@@ -299,16 +293,15 @@ def _create_edge_elements(
 ) -> list[dict[str, Any]]:
     elements = []
     for pair, result_pair in result.pairs.items():
-        source_uid = pair.source.uid
-        target_uid = pair.target.uid
-        if source_uid not in left_attr_lookup:
-            st.error(f"Source uid {source_uid} not found in left_attr_lookup")
+        source_name = pair.source.name
+        target_name = pair.target.name
+        if source_name not in left_attr_lookup:
+            st.error(f"Source name {source_name} not found in left_attr_lookup")
             raise ValueError()
-        if target_uid not in right_attr_lookup:
-            st.error(f"Target uid {target_uid} not found in right_attr_lookup")
+        if target_name not in right_attr_lookup:
+            print(right_attr_lookup)
+            st.error(f"Target name {target_name} not found in right_attr_lookup")
             raise ValueError()
-        source_name = left_attr_lookup[source_uid].name
-        target_name = right_attr_lookup[target_uid].name
         num_yes = len(
             [decision for decision in result_pair.votes if decision.vote == Vote.YES]
         )
@@ -326,8 +319,8 @@ def _create_edge_elements(
             elements.append(
                 {
                     "data": {
-                        "source": str(source_uid),
-                        "target": str(target_uid),
+                        "source": f"src_{source_name}",
+                        "target": f"trg_{target_name}",
                         "id": f"{id_prefix}.{source_name}➞{target_name}-yes",
                         "weight": num_yes,
                         "color": color_yes,
@@ -339,8 +332,8 @@ def _create_edge_elements(
             elements.append(
                 {
                     "data": {
-                        "source": str(source_uid),
-                        "target": str(target_uid),
+                        "source": f"src_{source_name}",
+                        "target": f"trg_{target_name}",
                         "id": f"{id_prefix}.{source_name}➞{target_name}-no",
                         "weight": num_no,
                         "color": color_no,
@@ -352,8 +345,8 @@ def _create_edge_elements(
             elements.append(
                 {
                     "data": {
-                        "source": str(source_uid),
-                        "target": str(target_uid),
+                        "source": f"src_{source_name}",
+                        "target": f"trg_{target_name}",
                         "id": f"{id_prefix}.{source_name}➞{target_name}-unknown",
                         "weight": num_unknown,
                         "color": color_unknown,
@@ -362,50 +355,3 @@ def _create_edge_elements(
                 }
             )
     return elements
-
-
-def toy_example():
-    # TODO: remove when example no longer needed
-    elements = [
-        {"data": {"id": "X", "name": "A"}, "selected": True, "selectable": False},
-        {"data": {"id": "Y", "name": "B"}},
-        {"data": {"id": "Z", "name": "C"}},
-        {"data": {"source": "X", "target": "Y", "id": "X➞Y"}},
-        {"data": {"source": "Z", "target": "Y", "id": "Z➞Y"}},
-        {"data": {"source": "Z", "target": "X", "id": "Z➞X"}},
-    ]
-
-    stylesheet = [
-        {
-            "selector": "node",
-            "style": {
-                "label": "data(name)",
-                "width": 20,
-                "height": 20,
-                "labelValign": "middle",
-                "text-valign": "center",
-                "text-halign": "center",
-            },
-        },
-        {
-            "selector": "edge",
-            "style": {
-                "width": 3,
-                "curve-style": "bezier",
-                "target-arrow-shape": "triangle",
-            },
-        },
-    ]
-
-    layout = {"name": "fcose", "animationDuration": 0}
-    # layout["alignmentConstraint"] = {"horizontal": [["X", "Y"]], "vertical" : [["X", "Z"]]}
-    layout["relativePlacementConstraint"] = [{"top": "X", "bottom": "Z"}]
-    layout["relativePlacementConstraint"] += [{"left": "X", "right": "Y"}]
-
-    selected = cytoscape(elements, stylesheet, layout=layout, key="graph_toy")
-
-    st.markdown("**Selected nodes**: %s" % (", ".join(selected["nodes"])))
-    st.markdown("**Selected edges**: %s" % (", ".join(selected["edges"])))
-
-    st.write(elements)
-    st.write(layout)

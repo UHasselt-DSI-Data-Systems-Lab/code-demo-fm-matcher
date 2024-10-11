@@ -1,6 +1,7 @@
 {
   "source_relation": {
     "name": "admissions",
+	"side": "source",
     "description": "The admissions table gives information regarding a patient\u2019s admission to the hospital. Since each unique hospital visit for a patient is assigned a unique hadm_id, the admissions table can be considered as a definition table for hadm_id. Information available includes timing information for admission and discharge, demographic information, the source of the admission, and so on.",
     "attributes": [
       {
@@ -67,6 +68,7 @@
   },
   "target_relation": {
     "name": "VISIT_DETAIL",
+	"side": "target",
     "description": "The VISIT_DETAIL table is an optional table used to represents details of each record in the parent VISIT_OCCURRENCE table. A good example of this would be the movement between units in a hospital during an inpatient stay or claim lines associated with a one insurance claim. For every record in the VISIT_OCCURRENCE table there may be 0 or more records in the VISIT_DETAIL table with a 1:n relationship where n may be 0. The VISIT_DETAIL table is structurally very similar to VISIT_OCCURRENCE table and belongs to the visit domain.",
     "attributes": [
       {

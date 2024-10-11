@@ -1,6 +1,7 @@
 {
   "source_relation": {
     "name": "patients",
+	"side": "source",
     "description": "Information that is consistent for the lifetime of a patient is stored in this table.",
     "attributes": [
       {
@@ -31,6 +32,7 @@
   },
   "target_relation": {
     "name": "PERSON",
+	"side": "target",
     "description": "This table serves as the central identity management for all Persons in the database. It contains records that uniquely identify each person or patient, and some demographic information.",
     "attributes": [
       {
