@@ -1,6 +1,5 @@
 from copy import deepcopy
 import hmac
-import io
 
 import streamlit as st
 
@@ -90,25 +89,27 @@ def _create_sql_button(mss: ModelSessionState) -> None:
     if mss.result is None:
         return
     if st.button("Create SQL"):
-        sql_string = io.StringIO()
-        sql_string.write(f"INSERT INTO {mss.target_relation.name}\n")
-        sql_string.write("SELECT\n")
-        first = True
+        target_attributes = []
+        select_lines = []
         for attr_pair, result in mss.result.pairs.items():
             if (
                 sum([1 if d.vote == Vote.YES else 0 for d in result.votes])
                 >= st.session_state["edge_threshold_slider"]
             ):
-                if first:
-                    first = False
-                else:
-                    sql_string.write(",\n")
-                sql_string.write(
+                target_attributes.append(f"  {attr_pair.target.name}")
+                select_lines.append(
                     f"  {attr_pair.source.name} AS {attr_pair.target.name}"
                 )
-        sql_string.write(f"\nFROM {mss.source_relation.name};")
+        sql_string = (
+            f"INSERT INTO {mss.target_relation.name} (\n"
+            f"{',\n'.join(target_attributes)}"
+            "\n)\n"
+            "SELECT\n"
+            f"{',\n'.join(select_lines)}"
+            f"\nFROM {mss.source_relation.name};"
+        )
         st.code(
-            body=sql_string.getvalue(),
+            body=sql_string,
             language="sql",
             line_numbers=True,
         )
