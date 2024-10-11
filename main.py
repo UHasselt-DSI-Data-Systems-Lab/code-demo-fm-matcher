@@ -1,10 +1,12 @@
 from copy import deepcopy
 import hmac
-import streamlit as st
-from utils.backend import schema_match
-from utils.models import Parameters
-from utils.screen_feedback import create_feedback_screen
+import io
 
+import streamlit as st
+
+from utils.backend import schema_match
+from utils.models import Parameters, Vote
+from utils.screen_feedback import create_feedback_screen
 from utils.screen_load import create_load_screen
 from utils.screen_visualize import create_visualize_screen
 from utils.model_session_state import ModelSessionState
@@ -62,7 +64,6 @@ if session_state_obj is None:
 
 def _submit_button(mss: ModelSessionState):
     if mss.source_relation is not None and mss.target_relation is not None:
-        st.divider()
         button_text = "Run Schema Matching"
         if len(mss.all_results) > 0:
             button_text = "Run Schema Matching Again"
@@ -83,6 +84,34 @@ def _submit_button(mss: ModelSessionState):
                 result.name = f"Experiment {mss.get_next_experiment_id()}"
                 mss.all_results.append(result)
             st.rerun()
+
+
+def _create_sql_button(mss: ModelSessionState) -> None:
+    if mss.result is None:
+        return
+    if st.button("Create SQL"):
+        sql_string = io.StringIO()
+        sql_string.write(f"INSERT INTO {mss.target_relation.name}\n")
+        sql_string.write("SELECT\n")
+        first = True
+        for attr_pair, result in mss.result.pairs.items():
+            if (
+                sum([1 if d.vote == Vote.YES else 0 for d in result.votes])
+                >= st.session_state["edge_threshold_slider"]
+            ):
+                if first:
+                    first = False
+                else:
+                    sql_string.write(",\n")
+                sql_string.write(
+                    f"  {attr_pair.source.name} AS {attr_pair.target.name}"
+                )
+        sql_string.write(f"\nFROM {mss.source_relation.name};")
+        st.code(
+            body=sql_string.getvalue(),
+            language="sql",
+            line_numbers=True,
+        )
 
 
 # The sidebar is used to reset the app and select the result to visualize
@@ -139,7 +168,11 @@ create_load_screen(session_state_obj)
 # Data visualization part
 create_visualize_screen(session_state_obj)
 
+# Feedback part
 create_feedback_screen(session_state_obj)
+
+st.divider()
 
 # (re)submit button
 _submit_button(session_state_obj)
+_create_sql_button(session_state_obj)
