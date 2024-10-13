@@ -7,32 +7,27 @@
       {
         "name": "Curr_service",
         "description": "prev_service and curr_service are the previous and current service that the patient resides under.",
-        "included": true,
-        "uid": null
+        "included": true
       },
       {
         "name": "Prev_service",
         "description": "prev_service and curr_service are the previous and current service that the patient resides under.",
-        "included": true,
-        "uid": null
+        "included": true
       },
       {
         "name": "Subject_id",
         "description": "subject_id is a unique identifier which specifies an individual patient. Any rows associated with a single subject_id pertain to the same individual.",
-        "included": true,
-        "uid": null
+        "included": true
       },
       {
         "name": "Transfertime",
         "description": "transfertime is the time at which the patient moved from the prev_service (if present) to the curr_service.",
-        "included": true,
-        "uid": null
+        "included": true
       },
       {
         "name": "Hadm_id",
         "description": "hadm_id is an integer identifier which is unique for each patient hospitalization.",
-        "included": true,
-        "uid": null
+        "included": true
       }
 	]
   },
