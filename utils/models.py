@@ -55,7 +55,7 @@ class Relation:
     def from_dict(data: Dict[str, Any]) -> "Relation":
         return Relation(
             name=data["name"],
-            side=data["side"],
+            side=Side(data["side"]),
             attributes=[Attribute.from_dict(a) for a in data["attributes"]],
             description=data.get("description", None),
         )
