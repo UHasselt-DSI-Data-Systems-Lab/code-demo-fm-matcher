@@ -1,22 +1,24 @@
-# Schema Matching using Large Language Models
+# FM-Matcher
 
-This tool demonstrates the usage of LLMs for schema matching. You can find more information about this [in our publication](https://arxiv.org/abs/2407.11852).
-
-This tool currently uses the OpenAI chat models directly via the OpenAI Python SDK. Other models are not supported out of the box.
+FM-Matcher demonstrates the use of Large Language Models for Schema Matching. Find more information [in our publication](https://arxiv.org/abs/2407.11852). This tool uses the [OpenAI Python SDK](https://github.com/openai/openai-python) to communicate with the OpenAI API. Other models are currently not supported out-of-the-box.
 
 ## Installation
 
-We use (and thus recommend) to install the tool using [poetry](https://python-poetry.org/):
+We use (and thus recommend) to install FM-Matcher using [poetry](https://python-poetry.org/):
 
 ```sh
 poetry install
 ```
 
-You may also choose to inspect the `pyproject.toml` file to install the tool manually.
+You may also choose to inspect the `requirements.txt` file to install the tool manually via `pip`.
 
 ### Container usage
 
-You may also choose to use FM-Matcher containerized. We provide a Dockerfile in this repository, based on a Python slim image.
+You may also choose to use FM-Matcher containerized. We provide a `Dockerfile` in this repository, based on a Python slim image. You can build an image with podman, for example, like this:
+
+```sh
+podman build -t fm_matcher .
+```
 
 ## Configuration
 
@@ -36,6 +38,14 @@ Under Linux and in the containerized setting, you can use environment variables 
 
 Run FM-Matcher as you would [run any Streamlit application](https://docs.streamlit.io/get-started/fundamentals/main-concepts): 
 
-``sh
+```sh
 poetry run streamlit run main.py
-``
+```
+
+### Container usage
+
+Assuming you have build the container as shown above, you can start a container like this:
+
+```sh
+podman run -d --name fm_matcher -e OPENAI_API_KEY="mySuperSecretApiKey" -p 8501:8501 fm_matcher
+```
