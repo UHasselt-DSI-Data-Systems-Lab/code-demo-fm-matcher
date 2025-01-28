@@ -1,5 +1,5 @@
 from .config import config
-from .models import Feedback, Parameters, Relation, Result
+from .models import Answer, Feedback, Parameters, PromptAttributePair, Relation, Result
 from .prompt_sending import send_prompts
 from .prompt_building import build_prompts
 from .prompt_postprocessing import postprocess_answers
@@ -35,13 +35,15 @@ def schema_match(
         from .models import AttributePair, Decision, ResultPair, Vote
         import itertools
         import random
+
         attribute_pairs = [
             AttributePair(
                 source=src,
                 target=trgt,
             )
             for (src, trgt) in itertools.product(
-                parameters.source_relation.attributes, parameters.target_relation.attributes
+                parameters.source_relation.attributes,
+                parameters.target_relation.attributes,
             )
         ]
         return Result(
@@ -51,7 +53,22 @@ def schema_match(
                 ap: ResultPair(
                     ap,
                     votes=[
-                        Decision(vote=rs, explanation="Testing") for rs in random.choices([Vote.YES, Vote.NO, Vote.UNKNOWN], weights=[1, 5, 2], k=3)
+                        Decision(
+                            vote=rs,
+                            explanation="Testing",
+                            answer=Answer(
+                                PromptAttributePair(
+                                    [ap.source],
+                                    [ap.target],
+                                ),
+                                "testing",
+                                1,
+                                True
+                            )
+                        )
+                        for rs in random.choices(
+                            [Vote.YES, Vote.NO, Vote.UNKNOWN], weights=[1, 5, 2], k=3
+                        )
                     ],
                     score=0.0,
                 )
@@ -72,4 +89,3 @@ def schema_match(
     result = postprocess_answers(parameters, answers)
     result = store_result(result)
     return result
-

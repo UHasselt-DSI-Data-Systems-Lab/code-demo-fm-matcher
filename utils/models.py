@@ -18,6 +18,13 @@ class Side(StrEnum):
     TARGET = "target"
 
 
+class TaskScope(StrEnum):
+    oneToOne = "1-to-1"
+    oneToN = "1-to-N"
+    nToOne = "N-to-1"
+    nToN = "N-to-M"
+
+
 @dataclass(order=True)
 class Attribute:
     name: str
@@ -76,6 +83,9 @@ class AttributePair:
 
     def __hash__(self) -> int:
         return hash(self.digest())
+
+    def __eq__(self, other) -> bool:
+        return self.digest() == other.digest()
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> "AttributePair":

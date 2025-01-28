@@ -6,6 +6,7 @@ import streamlit as st
 from utils.backend import schema_match
 from utils.models import Parameters, Relation, Vote
 from utils.screen_feedback import create_feedback_screen
+from utils.screen_evaluation import create_evaluation_screen
 from utils.screen_load import create_load_screen
 from utils.screen_visualize import create_visualize_screen
 from utils.model_session_state import ModelSessionState
@@ -183,6 +184,9 @@ create_load_screen(session_state_obj)
 
 # Data visualization part
 create_visualize_screen(session_state_obj)
+
+# Evaluation part
+create_evaluation_screen(session_state_obj)
 
 # Feedback part
 create_feedback_screen(session_state_obj)

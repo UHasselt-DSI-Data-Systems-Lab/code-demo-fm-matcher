@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 import streamlit as st
 from st_cytoscape import cytoscape
 from streamlit_extras.stylable_container import stylable_container
@@ -106,20 +106,14 @@ def create_visualize_screen(mss: ModelSessionState):
     }
 
     # this will be the order in which attributes are displayed
-    left_attr_names = [f"src_{a.name}" for a in result.parameters.source_relation.attributes]
-    right_attr_names = [f"trg_{a.name}" for a in result.parameters.target_relation.attributes]
-
-    elements: list[dict[str, Any]] = [
-        {
-            "data": {"id": f"src_{attr.name}", "name": attr.name},
-            "style": {"opacity": 1.0 if attr.included else 0.5}
-        } for attr in result.parameters.source_relation.attributes
-    ] + [
-        {
-            "data": {"id": f"trg_{attr.name}", "name": attr.name},
-            "style": {"opacity": 1.0 if attr.included else 0.5}
-        } for attr in result.parameters.target_relation.attributes
+    left_attr_names = [
+        f"src_{a.name}" for a in result.parameters.source_relation.attributes
     ]
+    right_attr_names = [
+        f"trg_{a.name}" for a in result.parameters.target_relation.attributes
+    ]
+
+    elements = _create_node_elements(result)
 
     # Add edges (=votes) to the graph
     elements.extend(
@@ -154,48 +148,10 @@ def create_visualize_screen(mss: ModelSessionState):
             )
         )
 
-    stylesheet = [
-        {
-            "selector": "node",
-            "style": {
-                "label": "data(name)",
-                "width": 230,
-                "height": 40,
-                "shape": "rectangle",
-                "text-valign": "center",
-                "text-halign": "center",
-            },
-        },
-        {
-            "selector": "edge",
-            "style": {
-                "width": "data(weight)",
-                "curve-style": "bezier",
-                "line-color": "data(color)",
-            },
-        },
-    ]
+    stylesheet = _create_custom_stylesheet()
 
     # The custom layout force a bipartite graph
-    layout = {"name": "fcose", "animationDuration": 0}
-    layout["alignmentConstraint"] = {
-        "horizontal": [[left_attr_names[0], right_attr_names[0]]],
-        "vertical": [
-            left_attr_names,
-            right_attr_names,
-        ],
-    }
-    layout["relativePlacementConstraint"] = [
-        {"left": left_attr_names[0], "right": right_attr_names[0], "gap": 600}
-    ]
-    layout["relativePlacementConstraint"] += [
-        {"top": name_a, "bottom": name_b, "gap": 80}
-        for name_a, name_b in zip(left_attr_names[:-1], left_attr_names[1:])
-    ]
-    layout["relativePlacementConstraint"] += [
-        {"top": name_a, "bottom": name_b, "gap": 80}
-        for name_a, name_b in zip(right_attr_names[:-1], right_attr_names[1:])
-    ]
+    layout = _create_bipartite_layout(left_attr_names, right_attr_names)
 
     max_num_attrs = max(len(left_attr_names), len(right_attr_names))
     selected = cytoscape(
@@ -230,6 +186,72 @@ def create_visualize_screen(mss: ModelSessionState):
         st.info(
             "Select an attribute pair in the graph to see voting details for the selected pair"
         )
+
+
+def _create_custom_stylesheet() -> List[Dict[str, Any]]:
+    return [
+        {
+            "selector": "node",
+            "style": {
+                "label": "data(name)",
+                "width": 230,
+                "height": 40,
+                "shape": "rectangle",
+                "text-valign": "center",
+                "text-halign": "center",
+            },
+        },
+        {
+            "selector": "edge",
+            "style": {
+                "width": "data(weight)",
+                "curve-style": "bezier",
+                "line-color": "data(color)",
+            },
+        },
+    ]
+
+
+def _create_node_elements(result: Result) -> List[Dict[str, Any]]:
+    return [
+        {
+            "data": {"id": f"src_{attr.name}", "name": attr.name},
+            "style": {"opacity": 1.0 if attr.included else 0.5},
+        }
+        for attr in result.parameters.source_relation.attributes
+    ] + [
+        {
+            "data": {"id": f"trg_{attr.name}", "name": attr.name},
+            "style": {"opacity": 1.0 if attr.included else 0.5},
+        }
+        for attr in result.parameters.target_relation.attributes
+    ]
+
+
+
+def _create_bipartite_layout(
+    left_attr_names: List[str], right_attr_names: List[str]
+) -> Dict[str, Any]:
+    layout = {"name": "fcose", "animationDuration": 0}
+    layout["alignmentConstraint"] = {
+        "horizontal": [[left_attr_names[0], right_attr_names[0]]],
+        "vertical": [
+            left_attr_names,
+            right_attr_names,
+        ],
+    }
+    layout["relativePlacementConstraint"] = [
+        {"left": left_attr_names[0], "right": right_attr_names[0], "gap": 600}
+    ]
+    layout["relativePlacementConstraint"] += [
+        {"top": name_a, "bottom": name_b, "gap": 80}
+        for name_a, name_b in zip(left_attr_names[:-1], left_attr_names[1:])
+    ]
+    layout["relativePlacementConstraint"] += [
+        {"top": name_a, "bottom": name_b, "gap": 80}
+        for name_a, name_b in zip(right_attr_names[:-1], right_attr_names[1:])
+    ]
+    return layout
 
 
 def _voting_details(
