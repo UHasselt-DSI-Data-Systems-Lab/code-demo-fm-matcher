@@ -1,9 +1,12 @@
 import os
 import json
 from typing import Dict, Optional
+
+import pandas as pd
 import streamlit as st
+
 from utils.model_session_state import ModelSessionState
-from utils.models import Relation, Attribute, Result, Side
+from utils.models import Relation, Attribute, AttributePair, Result, Side
 
 
 def create_load_screen(mss: ModelSessionState):
@@ -54,6 +57,7 @@ def create_load_screen(mss: ModelSessionState):
                 )
                 if chosen_name:
                     uploaded_file = open(f"test_inputs/{file_name}", "rb")
+                    ground_truth_filename = file_name[:-len(".json")] + "_ground_truth.csv"
 
         if uploaded_file is not None:
             st.session_state["upload_id"] += 1
@@ -61,6 +65,15 @@ def create_load_screen(mss: ModelSessionState):
             # load relations from json
             mss.source_relation = Relation.from_dict(json_dict["source_relation"])
             mss.target_relation = Relation.from_dict(json_dict["target_relation"])
+            mss.ground_truth = list()
+            if os.path.exists(os.path.join("test_inputs", ground_truth_filename)):
+                gt_csv = pd.read_csv(os.path.join("test_inputs", ground_truth_filename))
+                for _, row in gt_csv.iterrows():
+                    ap = AttributePair(
+                        _get_attribute_by_name(mss.source_relation, row["source"]),
+                        _get_attribute_by_name(mss.target_relation, row["target"]),
+                    )
+                    mss.ground_truth.append(ap)
             st.rerun()
 
     col1, col2 = st.columns(2, gap="medium")
@@ -88,9 +101,106 @@ def create_load_screen(mss: ModelSessionState):
             )
             _create_add_attribute_button(mss, Side.TARGET)
 
+    st.subheader("Ground truth")
+    st.text(
+        (
+            "To enable the evaluation functionality, provide the true matches"
+            " between the source and the target attributes in the following list."
+        )
+    )
+    if st.checkbox(
+        "Enable ground truth", disabled=mss.input_fixed, value=mss.ground_truth_enabled
+    ):
+        mss.ground_truth_enabled = True
+        _ground_truth_selection(mss)
+    else:
+        mss.ground_truth_enabled = False
+
+
+def _get_attribute_by_name(
+    relation: Relation, attribute_name: str
+) -> Optional[Attribute]:
+    for attr in relation.attributes:
+        if attr.name == attribute_name:
+            return attr
+    return None
+
+
+def _ground_truth_selection(mss: ModelSessionState) -> None:
+    left, right, control = st.columns(3)
+    with left:
+        st.caption("source attributes")
+        if not mss.input_fixed:
+            source_attribute = st.selectbox(
+                "choose a source attribute",
+                options=[a.name for a in mss.source_relation.attributes],
+                key=f"ground_truth_source_attribute_{len(mss.ground_truth)}",
+                disabled=mss.input_fixed,
+                label_visibility="collapsed",
+            )
+        for i, ap in enumerate(mss.ground_truth):
+            st.text_input(
+                "source attribute name",
+                ap.source.name,
+                disabled=True,
+                key=f"ground_truth_source_attribute_{i}",
+                label_visibility="collapsed",
+            )
+
+    with right:
+        st.caption("target_attributes")
+        if not mss.input_fixed:
+            target_attribute = st.selectbox(
+                "choose a target attribute",
+                options=[a.name for a in mss.target_relation.attributes],
+                key=f"ground_truth_target_attribute_{len(mss.ground_truth)}",
+                disabled=mss.input_fixed,
+                label_visibility="collapsed",
+            )
+        for i, ap in enumerate(mss.ground_truth):
+            st.text_input(
+                "target attribute name",
+                ap.target.name,
+                disabled=True,
+                key=f"ground_truth_target_attribute_{i}",
+                label_visibility="collapsed",
+            )
+    with control:
+        st.caption("controls")
+        if not mss.input_fixed:
+            if st.button(
+                "add",
+                disabled=(
+                    mss.input_fixed
+                    or (source_attribute is None)
+                    or (target_attribute is None)
+                ),
+            ):
+                src_attr = _get_attribute_by_name(mss.source_relation, source_attribute)
+                trg_attr = _get_attribute_by_name(mss.target_relation, target_attribute)
+                if not src_attr or not trg_attr:
+                    st.error("An unknown error has occured.")
+                attr_pair = AttributePair(src_attr, trg_attr)
+                if attr_pair in mss.ground_truth:
+                    st.toast("This pair is already in the ground truth.")
+                else:
+                    mss.ground_truth.append(AttributePair(src_attr, trg_attr))
+                    st.rerun()
+        for ap in mss.ground_truth:
+            remove_ap = st.button(
+                "remove",
+                key=f"remove_button_{ap.source.name}_{ap.target.name}",
+                disabled=mss.input_fixed,
+            )
+            if remove_ap:
+                mss.ground_truth.remove(ap)
+                st.rerun()
+
 
 def _create_add_attribute_button(mss: ModelSessionState, side: Side) -> None:
-    if not mss.input_fixed and st.button("Add attribute", key=f"add_{side.value}_attribute"):
+    if not mss.input_fixed and st.button(
+        "Add attribute", key=f"add_{side.value}_attribute"
+    ):
         getattr(mss, f"{side.value}_relation").attributes.append(
             Attribute(
                 name="Name...",

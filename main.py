@@ -4,7 +4,6 @@ import hmac
 import streamlit as st
 
 from utils.backend import schema_match
-from utils.config import config
 from utils.models import Parameters, Relation, Vote
 from utils.screen_feedback import create_feedback_screen
 from utils.screen_evaluation import create_evaluation_screen

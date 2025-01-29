@@ -3,7 +3,7 @@ from typing import Dict, List, Set
 
 import pandas as pd
 import plotly.graph_objects as go
-from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import precision_recall_fscore_support, f1_score
 import streamlit as st
 import textdistance as td
 
@@ -38,10 +38,11 @@ BASELINES = {
 def create_evaluation_screen(mss: ModelSessionState):
     if mss.result is None:
         return
-    st.header("Evaluation")
 
-    # TODO: obtain the ground truth
-    ground_truth = [("gender", "sex"), ("registerdate", "birthdate")]
+    if not mss.ground_truth_enabled:
+        return
+
+    st.header("Evaluation")
 
     result = mss.result
 
@@ -50,7 +51,7 @@ def create_evaluation_screen(mss: ModelSessionState):
     with left:
         scopes_to_show = st.pills(
             "Select task scopes for comparison:",
-            ["1-to-N", "N-to-1", "N-to-M"] + ["1-to-1"],
+            ["1-to-N", "N-to-1", "N-to-M"],
             selection_mode="multi",
             default=["1-to-N", "N-to-1"],
         )
@@ -63,7 +64,7 @@ def create_evaluation_screen(mss: ModelSessionState):
         )
         # TODO: if possible, choose the best threshold as done in the experiments
         # idea: between creating evaluation and adding all scopes, I could make the check and change the value of this slider (don't forget to also change baseline_threshold then)
-        baseline_threshold = st.slider("Choose a threshold:", 0.0, 1.0, 0.5)
+        baseline_threshold = st.slider("Choose a threshold:", 0.0, 1.0, 0.5, key="baseline_threshold_slider")
 
     # show evaluation metrics
     baseline_values = {
@@ -72,14 +73,36 @@ def create_evaluation_screen(mss: ModelSessionState):
         )
         for attribute_pair, _ in result.pairs.items()
     }
+    # find the best (judging by the F1-score) baseline threshold
+    ap_order = list(baseline_values.keys())  # the order does not matter, but needs to be consistent
+    y_true = [
+        ap in mss.ground_truth
+        for ap in ap_order
+    ]
+    thresholds = {}
+    for gt_ap in mss.ground_truth:
+        y_pred = [
+            baseline_values[ap] >= baseline_values[gt_ap]
+            for ap in ap_order
+        ]
+        thresholds[baseline_values[gt_ap]] = f1_score(
+            y_true,
+            y_pred,
+            pos_label=True,
+            average="binary",
+            zero_division=0.0,
+        )
+    #TODO: does not work this way, bugfix needed!
+    #baseline_threshold = pd.Series(thresholds).idxmax()
+    #st.session_state.baseline_threshold_slider = baseline_threshold
+
     evaluation = [
         {
             "task_scope": baseline_to_use,
             "source": attribute_pair.source.name,
             "target": attribute_pair.target.name,
             "decision": "yes" if similarity >= baseline_threshold else "no",
-            "benchmark": (attribute_pair.source.name, attribute_pair.target.name)
-            in ground_truth,
+            "ground_truth": attribute_pair in mss.ground_truth,
         }
         for attribute_pair, similarity in baseline_values.items()
     ]
@@ -99,28 +122,28 @@ def create_evaluation_screen(mss: ModelSessionState):
                     "source": attribute_pair.source.name,
                     "target": attribute_pair.target.name,
                     "decision": decision,
-                    "benchmark": (
-                        attribute_pair.source.name,
-                        attribute_pair.target.name,
-                    )
-                    in ground_truth,
+                    "ground_truth": attribute_pair in mss.ground_truth,
                 }
             )
     evaluation = pd.DataFrame(evaluation)
     score_columns = [baseline_to_use] + sorted(scopes_to_show)
-    scores = evaluation.groupby("task_scope").apply(
-        lambda group: pd.Series(
-            precision_recall_fscore_support(
-                group["benchmark"],
-                group["decision"] == "yes",
-                average="binary",
-                pos_label=True,
-                zero_division=0.0,
+    scores = (
+        evaluation.groupby("task_scope")
+        .apply(
+            lambda group: pd.Series(
+                precision_recall_fscore_support(
+                    group["ground_truth"],
+                    group["decision"] == "yes",
+                    average="binary",
+                    pos_label=True,
+                    zero_division=0.0,
+                ),
+                index=["precision", "recall", "f1-score", "support"],
             ),
-            index=["precision", "recall", "f1-score", "support"],
-        ),
-        include_groups=False,
-    ).loc[score_columns]
+            include_groups=False,
+        )
+        .loc[score_columns]
+    )
     labels = [
         [
             f"{f1_score:.3f} ({scores.loc[scope, 'precision']:.2f}, {scores.loc[scope, 'recall']:.2f})"
@@ -148,13 +171,17 @@ def create_evaluation_screen(mss: ModelSessionState):
         },
     )
     st.plotly_chart(fig, use_container_width=True)
-    decisiveness = evaluation.groupby("task_scope").apply(
-        lambda group: pd.Series(
-            1 - group[group["decision"] == "unknown"].shape[0] / group.shape[0],
-            index=["decisiveness"],
-        ),
-        include_groups=False,
-    ).loc[score_columns]
+    decisiveness = (
+        evaluation.groupby("task_scope")
+        .apply(
+            lambda group: pd.Series(
+                1 - group[group["decision"] == "unknown"].shape[0] / group.shape[0],
+                index=["decisiveness"],
+            ),
+            include_groups=False,
+        )
+        .loc[score_columns]
+    )
     fig = go.Figure(
         data=go.Heatmap(
             x=score_columns,
@@ -181,13 +208,13 @@ def create_evaluation_screen(mss: ModelSessionState):
     left, right = st.columns(2)
     with left:
         for scope in sorted(scopes_to_show):
-            with st.expander(scope):
+            with st.expander(f"{scope} misclassifications"):
                 st.caption("false positives")
                 st.table(
                     evaluation.query(
                         "(task_scope == @scope)"
                         " and (decision == 'yes')"
-                        " and ~benchmark"
+                        " and ~ground_truth"
                     )
                 )
                 st.caption("false negatives")
@@ -195,70 +222,39 @@ def create_evaluation_screen(mss: ModelSessionState):
                     evaluation.query(
                         "(task_scope == @scope)"
                         " and (decision == 'no')"
-                        " and benchmark"
+                        " and ground_truth"
                     )
                 )
                 st.caption("unknowns")
                 st.table(
                     evaluation.query(
-                        "(task_scope == @scope)"
-                        " and (decision == 'unknown')"
+                        "(task_scope == @scope)" " and (decision == 'unknown')"
                     )
                 )
 
-    selected_source = [
-        attr
-        for attr in result.parameters.source_relation.attributes
-        if f"src_{attr.name}" in mss.selected_attrs
-    ]
-    selected_target = [
-        attr
-        for attr in result.parameters.target_relation.attributes
-        if f"trg_{attr.name}" in mss.selected_attrs
-    ]
     with right:
-        baseline_values = {}
-        if len(selected_source) == 1:
-            baseline_selected = selected_source[0]
-            baseline_values = _get_attributes_baseline(
-                selected_source[0],
-                (
-                    selected_target
-                    if selected_target
-                    else result.parameters.target_relation.attributes
-                ),
-                BASELINES[baseline_to_use],
-            )
-        elif len(selected_target) == 1:
-            baseline_selected = selected_target[0]
-            baseline_values = _get_attributes_baseline(
-                selected_target[0],
-                (
-                    selected_source
-                    if selected_source
-                    else result.parameters.source_relation.attributes
-                ),
-                BASELINES[baseline_to_use],
-            )
-        if baseline_values:
-            st.text(f"{baseline_to_use} similarity of {baseline_selected.name}:")
-            st.table(
-                [
-                    {
-                        "attribute": attr,
-                        "similarity": sim,
-                        "match": sim >= baseline_threshold,
-                    }
-                    for attr, sim in baseline_values.items()
-                ]
-            )
-        else:
-            st.info(
-                (
-                    "Select a single source attribute or a single target attribute "
-                    "to view detailed string similarities."
-                )
-            )
+        baseline_evaluation = pd.DataFrame(
+            [
+                {
+                    "source": ap.source.name,
+                    "target": ap.target.name,
+                    "similarity": similarity,
+                    "match": similarity >= baseline_threshold,
+                    "ground_truth": ap in mss.ground_truth,
+                }
+                for ap, similarity in baseline_values.items()
+            ]
+        ).sort_values("similarity", ascending=False)
+        with st.expander("baseline misclassifications"):
+            st.caption("false positives")
+            st.table(baseline_evaluation.query("match and ~ground_truth"))
+            st.caption("false negatives")
+            st.table(baseline_evaluation.query("~match and ground_truth"))
+        with st.expander("baseline correct classifications"):
+            st.caption("true positives")
+            st.table(baseline_evaluation.query("match and ground_truth"))
+            st.caption("true negatives")
+            st.table(baseline_evaluation.query("~match and ~ground_truth"))
 
 
 def _get_attributes_baseline(
