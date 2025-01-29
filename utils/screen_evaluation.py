@@ -1,8 +1,10 @@
 from collections.abc import Callable
-from typing import Any, Dict, List, Set
+from typing import Dict, List, Set
 
+import pandas as pd
+import plotly.graph_objects as go
+from sklearn.metrics import precision_recall_fscore_support
 import streamlit as st
-from st_cytoscape import cytoscape
 import textdistance as td
 
 from utils.models import Answer, Attribute, AttributePair, Result, TaskScope, Vote
@@ -36,11 +38,174 @@ BASELINES = {
 def create_evaluation_screen(mss: ModelSessionState):
     if mss.result is None:
         return
-    # TODO: check if ground truth is there
-    # TODO: add metrics calculation
     st.header("Evaluation")
 
+    # TODO: obtain the ground truth
+    ground_truth = [("gender", "sex"), ("registerdate", "birthdate")]
+
     result = mss.result
+
+    # choose the parameters to use
+    left, right = st.columns(2)
+    with left:
+        scopes_to_show = st.pills(
+            "Select task scopes for comparison:",
+            ["1-to-N", "N-to-1", "N-to-M"] + ["1-to-1"],
+            selection_mode="multi",
+            default=["1-to-N", "N-to-1"],
+        )
+
+    with right:
+        baseline_to_use = st.selectbox(
+            "Choose a baseline string similarity metric:",
+            list(BASELINES.keys()),
+            index=3,
+        )
+        # TODO: if possible, choose the best threshold as done in the experiments
+        # idea: between creating evaluation and adding all scopes, I could make the check and change the value of this slider (don't forget to also change baseline_threshold then)
+        baseline_threshold = st.slider("Choose a threshold:", 0.0, 1.0, 0.5)
+
+    # show evaluation metrics
+    baseline_values = {
+        attribute_pair: BASELINES[baseline_to_use](
+            attribute_pair.source.name, attribute_pair.target.name
+        )
+        for attribute_pair, _ in result.pairs.items()
+    }
+    evaluation = [
+        {
+            "task_scope": baseline_to_use,
+            "source": attribute_pair.source.name,
+            "target": attribute_pair.target.name,
+            "decision": "yes" if similarity >= baseline_threshold else "no",
+            "benchmark": (attribute_pair.source.name, attribute_pair.target.name)
+            in ground_truth,
+        }
+        for attribute_pair, similarity in baseline_values.items()
+    ]
+    for scope in scopes_to_show:
+        for attribute_pair, votes in _get_votes_by_scope(result, scope).items():
+            if votes:
+                vote_count = pd.Series(votes).value_counts()
+                if vote_count.max() == 1:
+                    decision = "unknown"
+                else:
+                    decision = vote_count.idxmax()
+            else:
+                decision = "unknown"
+            evaluation.append(
+                {
+                    "task_scope": scope,
+                    "source": attribute_pair.source.name,
+                    "target": attribute_pair.target.name,
+                    "decision": decision,
+                    "benchmark": (
+                        attribute_pair.source.name,
+                        attribute_pair.target.name,
+                    )
+                    in ground_truth,
+                }
+            )
+    evaluation = pd.DataFrame(evaluation)
+    score_columns = [baseline_to_use] + sorted(scopes_to_show)
+    scores = evaluation.groupby("task_scope").apply(
+        lambda group: pd.Series(
+            precision_recall_fscore_support(
+                group["benchmark"],
+                group["decision"] == "yes",
+                average="binary",
+                pos_label=True,
+                zero_division=0.0,
+            ),
+            index=["precision", "recall", "f1-score", "support"],
+        ),
+        include_groups=False,
+    ).loc[score_columns]
+    labels = [
+        [
+            f"{f1_score:.3f} ({scores.loc[scope, 'precision']:.2f}, {scores.loc[scope, 'recall']:.2f})"
+            for scope, f1_score in scores["f1-score"].items()
+        ]
+    ]
+    fig = go.Figure(
+        data=go.Heatmap(
+            x=score_columns,
+            y=[""],
+            z=[scores["f1-score"].values],
+            text=labels,
+            texttemplate="%{text}",
+            textfont={"size": 20},
+            colorscale="PRGn",
+            zmin=-1.0,
+            zmax=1.0,
+            showscale=False,
+        ),
+        layout={
+            "title": "F1-score (precision, recall)",
+            "height": 250,
+            "width": 1000,
+            "yaxis": {"autorange": "reversed"},
+        },
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    decisiveness = evaluation.groupby("task_scope").apply(
+        lambda group: pd.Series(
+            1 - group[group["decision"] == "unknown"].shape[0] / group.shape[0],
+            index=["decisiveness"],
+        ),
+        include_groups=False,
+    ).loc[score_columns]
+    fig = go.Figure(
+        data=go.Heatmap(
+            x=score_columns,
+            y=[""],
+            z=[decisiveness["decisiveness"].values],
+            texttemplate="%{z:.2f}",
+            textfont={"size": 20},
+            colorscale="PRGn",
+            zmin=-1.0,
+            zmax=1.0,
+            showscale=False,
+        ),
+        layout={
+            "title": "Decisiveness (fraction of non-unknown votes)",
+            "height": 250,
+            "width": 1000,
+            "yaxis": {"autorange": "reversed"},
+        },
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+    # show more details
+    st.subheader("More details")
+    left, right = st.columns(2)
+    with left:
+        for scope in sorted(scopes_to_show):
+            with st.expander(scope):
+                st.caption("false positives")
+                st.table(
+                    evaluation.query(
+                        "(task_scope == @scope)"
+                        " and (decision == 'yes')"
+                        " and ~benchmark"
+                    )
+                )
+                st.caption("false negatives")
+                st.table(
+                    evaluation.query(
+                        "(task_scope == @scope)"
+                        " and (decision == 'no')"
+                        " and benchmark"
+                    )
+                )
+                st.caption("unknowns")
+                st.table(
+                    evaluation.query(
+                        "(task_scope == @scope)"
+                        " and (decision == 'unknown')"
+                    )
+                )
+
     selected_source = [
         attr
         for attr in result.parameters.source_relation.attributes
@@ -51,24 +216,7 @@ def create_evaluation_screen(mss: ModelSessionState):
         for attr in result.parameters.target_relation.attributes
         if f"trg_{attr.name}" in mss.selected_attrs
     ]
-
-    left, right = st.columns(2)
-    with left:
-        scopes_to_show = st.pills(
-            "Compare task scopes:",
-            ["1-to-N", "N-to-1", "N-to-M"] + ["1-to-1"],
-            selection_mode="multi",
-            default=["1-to-N", "N-to-1"],
-        )
-        # TODO: calculate the metrics here
-        # idea: can I copy-pasta my evaluation heatmaps here? there is a st.plotly_chart elements, which takes a figure. check my analysis notebooks whether that is possible and easy to do
-
     with right:
-        baseline_to_use = st.selectbox(
-            "Choose a baseline string similarity metric:",
-            list(BASELINES.keys()),
-            index=3,
-        )
         baseline_values = {}
         if len(selected_source) == 1:
             baseline_selected = selected_source[0]
@@ -92,11 +240,18 @@ def create_evaluation_screen(mss: ModelSessionState):
                 ),
                 BASELINES[baseline_to_use],
             )
-        # TODO: calculate metrics here
-        # idea: see above, take the analysis notebooks
         if baseline_values:
             st.text(f"{baseline_to_use} similarity of {baseline_selected.name}:")
-            st.table(baseline_values)
+            st.table(
+                [
+                    {
+                        "attribute": attr,
+                        "similarity": sim,
+                        "match": sim >= baseline_threshold,
+                    }
+                    for attr, sim in baseline_values.items()
+                ]
+            )
         else:
             st.info(
                 (
