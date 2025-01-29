@@ -28,9 +28,12 @@ def build_prompts(
     parameters: Parameters,
     templates: List[str] = ["oneToN", "nToOne"],
     modes: List[PromptDesign] = [PromptDesign.oneToN, PromptDesign.nToOne],
+    model: str = config["OPENAI_MODEL"],
 ) -> List[Prompt]:
     """Generate OpenAI Chat Completion prompts from parameters."""
     rendered = []
+    if model is None:
+        model = config["OPENAI_MODEL"],
     for template, mode in zip(templates, modes):
         source_card, target_card = mode.split("-")
         sources = [
@@ -56,7 +59,7 @@ def build_prompts(
                         ),
                         prompt=CompletionCreateParamsNonStreaming(
                             {
-                                "model": config["OPENAI_MODEL"],
+                                "model": model,
                                 "temperature": config["OPENAI_TEMPERATURE"],
                                 "messages": render_prompt(
                                     (source, target),

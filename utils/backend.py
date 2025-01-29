@@ -1,7 +1,7 @@
 from .config import config
 from .models import Answer, Feedback, Parameters, PromptAttributePair, Relation, Result
 from .prompt_sending import send_prompts
-from .prompt_building import build_prompts
+from .prompt_building import build_prompts, PromptDesign
 from .prompt_postprocessing import postprocess_answers
 from .storage import (
     store_parameters,
@@ -16,6 +16,7 @@ def schema_match(
     source_relation: Relation = None,
     target_relation: Relation = None,
     feedback: Feedback = None,
+    use_llm: str = None,
 ) -> Result:
     """Perform schema matching on two tables. Either provide a set of parameters or two tables and a feedback object."""
     if parameters is None:
@@ -84,7 +85,12 @@ def schema_match(
     result = get_result_by_parameters(parameters)
     if result is not None:
         return result
-    prompts = build_prompts(parameters)
+    prompts = build_prompts(
+        parameters,
+        templates=["oneToN", "nToOne", "nToN"],
+        modes=[PromptDesign.oneToN, PromptDesign.nToOne, PromptDesign.nToN],
+        model=use_llm,
+    )
     answers = send_prompts(parameters, prompts)
     result = postprocess_answers(parameters, answers)
     result = store_result(result)

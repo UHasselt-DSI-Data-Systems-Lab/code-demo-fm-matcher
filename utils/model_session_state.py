@@ -1,8 +1,8 @@
 """A dataclass to store all session data in the Streamlit app."""
 
 from dataclasses import dataclass, field
-from typing import Optional
-from utils.models import Feedback, Relation, Result
+from typing import List, Optional
+from utils.models import AttributePair, Feedback, Relation, Result
 
 @dataclass
 class ModelSessionState:
@@ -17,6 +17,8 @@ class ModelSessionState:
     uid_counter: int = 0 # used for generating unique ids for attributes
     experiment_counter: int = 0 # used for generating unique ids for experiments
     selected_attrs: list[int] = field(default_factory=list)
+    selected_llm: str = None  # llm selected by the user
+    ground_truth: Optional[List[AttributePair]] = None  # a list of attribute pairs that represent the ground truth
 
     def get_next_uid(self) -> int:
         """Returns the next unique id."""

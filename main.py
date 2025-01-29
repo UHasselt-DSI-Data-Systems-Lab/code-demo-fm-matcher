@@ -4,6 +4,7 @@ import hmac
 import streamlit as st
 
 from utils.backend import schema_match
+from utils.config import config
 from utils.models import Parameters, Relation, Vote
 from utils.screen_feedback import create_feedback_screen
 from utils.screen_evaluation import create_evaluation_screen
@@ -93,7 +94,8 @@ def _submit_button(mss: ModelSessionState):
                 target_relation=deepcopy(mss.target_relation),
                 feedback=deepcopy(mss.feedback),
             )
-            result = schema_match(params)
+            selected_llm = mss.selected_llm
+            result = schema_match(params, use_llm=selected_llm)
 
             # st.info("Debug info: manual sleep time for testing purposes!")
             # time.sleep(1)
@@ -143,6 +145,15 @@ with st.sidebar:
         # Create a new object to store session state
         st.session_state["session_state"] = session_state_obj = ModelSessionState()
         st.rerun()
+
+    valid_llms = ["gpt-4o-mini", "gpt-3.5-turbo", "gpt-4-turbo", "gpt-4", "gpt-4o"]
+    llm_selected = st.selectbox(
+        "Select an LLM to use",
+        options=valid_llms,
+        index=0,
+    )
+    if llm_selected in valid_llms:
+        session_state_obj.selected_llm = llm_selected
 
     # Select result version(s) to visualize
     num_exps = len(session_state_obj.all_results)
