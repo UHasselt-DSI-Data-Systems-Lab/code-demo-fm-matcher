@@ -1,0 +1,11 @@
+source,target
+subject_id,person_id
+itemid,measurement_concept_id
+charttime,measurement_datetime
+valueuom,unit_concept_id
+ref_range_lower,range_low
+ref_range_upper,range_high
+itemid,measurement_source_value
+valueuom,unit_source_value
+value,value_source_value
+itemid,measurement_source_concept_id

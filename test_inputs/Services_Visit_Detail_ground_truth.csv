@@ -1,0 +1,6 @@
+source,target
+Subject_id,person_id
+Curr_service,visit_detail_concept_id
+Transfertime,visit_detail_start_datetime
+Curr_service,care_site_id
+Curr_service,visit_detail_source_concept_id

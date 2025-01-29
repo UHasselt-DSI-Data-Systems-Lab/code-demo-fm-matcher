@@ -1,0 +1,6 @@
+source,target
+subject_id,person_id
+admission_type,visit_detail_concept_id
+dischtime,visit_detail_end_datetime
+admission_type,care_site_id
+admission_type,visit_detail_source_concept_id

@@ -1,0 +1,7 @@
+source,target
+starttime,drug_exposure_start_datetime
+form_val_disp,quantity
+form_unit_disp,dose_unit_source_value
+route,route_concept_id
+route,route_source_value
+subject_id,person_id

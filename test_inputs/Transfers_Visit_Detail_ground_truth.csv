@@ -1,0 +1,7 @@
+source,target
+subject_id,person_id
+careunit,visit_detail_concept_id
+intime,visit_detail_start_datetime
+careunit,care_site_id
+careunit,visit_detail_source_concept_id
+outtime,visit_detail_end_datetime
