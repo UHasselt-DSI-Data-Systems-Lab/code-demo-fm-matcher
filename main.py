@@ -14,7 +14,7 @@ from utils.model_session_state import ModelSessionState
 st.set_page_config(layout="wide")
 
 st.title("LLM-Matcher")
-st.text("Schema Matching for Health Data using Foundation Models")
+st.text("Schema Matching for Health Data using Large Language Models")
 
 
 def check_password() -> bool:

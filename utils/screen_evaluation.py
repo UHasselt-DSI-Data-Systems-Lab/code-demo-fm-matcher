@@ -195,7 +195,7 @@ def create_evaluation_screen(mss: ModelSessionState):
             showscale=False,
         ),
         layout={
-            "title": "Decisiveness (fraction of non-unknown votes)",
+            "title": "Decisiveness (fraction of non-unknown decisions)",
             "height": 250,
             "width": 1000,
             "yaxis": {"autorange": "reversed"},
