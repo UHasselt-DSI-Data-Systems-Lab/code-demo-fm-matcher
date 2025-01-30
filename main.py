@@ -13,7 +13,7 @@ from utils.model_session_state import ModelSessionState
 
 st.set_page_config(layout="wide")
 
-st.title("FM-Matcher")
+st.title("LLM-Matcher")
 st.text("Schema Matching for Health Data using Foundation Models")
 
 
