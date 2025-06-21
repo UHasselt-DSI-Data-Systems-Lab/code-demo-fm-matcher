@@ -30,6 +30,7 @@ def create_load_screen(mss: ModelSessionState):
             type=["json"],
             key=f"upload.{st.session_state['upload_id']}",
         )
+        ground_truth_filename = ""
         # hardcode a few example relations for presentation purposes
         st.markdown("Or choose a pre-defined example")
         example_file_names = list(
@@ -57,7 +58,9 @@ def create_load_screen(mss: ModelSessionState):
                 )
                 if chosen_name:
                     uploaded_file = open(f"test_inputs/{file_name}", "rb")
-                    ground_truth_filename = file_name[:-len(".json")] + "_ground_truth.csv"
+                    ground_truth_filename = (
+                        file_name[: -len(".json")] + "_ground_truth.csv"
+                    )
 
         if uploaded_file is not None:
             st.session_state["upload_id"] += 1
@@ -66,7 +69,9 @@ def create_load_screen(mss: ModelSessionState):
             mss.source_relation = Relation.from_dict(json_dict["source_relation"])
             mss.target_relation = Relation.from_dict(json_dict["target_relation"])
             mss.ground_truth = list()
-            if os.path.exists(os.path.join("test_inputs", ground_truth_filename)):
+            if (len(ground_truth_filename) > 1) and os.path.exists(
+                os.path.join("test_inputs", ground_truth_filename)
+            ):
                 gt_csv = pd.read_csv(os.path.join("test_inputs", ground_truth_filename))
                 for _, row in gt_csv.iterrows():
                     ap = AttributePair(
