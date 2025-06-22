@@ -44,8 +44,6 @@ def create_evaluation_screen(mss: ModelSessionState):
 
     st.header("Evaluation")
 
-    result = mss.result
-
     # choose the parameters to use
     left, right = st.columns(2)
     with left:
@@ -62,73 +60,68 @@ def create_evaluation_screen(mss: ModelSessionState):
             list(BASELINES.keys()),
             index=3,
         )
-        # TODO: if possible, choose the best threshold as done in the experiments
-        # idea: between creating evaluation and adding all scopes, I could make the check and change the value of this slider (don't forget to also change baseline_threshold then)
-        baseline_threshold = st.slider("Choose a threshold:", 0.0, 1.0, 0.5, key="baseline_threshold_slider")
 
-    # show evaluation metrics
-    baseline_values = {
-        attribute_pair: BASELINES[baseline_to_use](
-            attribute_pair.source.name, attribute_pair.target.name
-        )
-        for attribute_pair, _ in result.pairs.items()
-    }
-    # find the best (judging by the F1-score) baseline threshold
-    ap_order = list(baseline_values.keys())  # the order does not matter, but needs to be consistent
-    y_true = [
-        ap in mss.ground_truth
-        for ap in ap_order
-    ]
-    thresholds = {}
-    for gt_ap in mss.ground_truth:
-        y_pred = [
-            baseline_values[ap] >= baseline_values[gt_ap]
-            for ap in ap_order
-        ]
-        thresholds[baseline_values[gt_ap]] = f1_score(
-            y_true,
-            y_pred,
-            pos_label=True,
-            average="binary",
-            zero_division=0.0,
-        )
-    #TODO: does not work this way, bugfix needed!
-    #baseline_threshold = pd.Series(thresholds).idxmax()
-    #st.session_state.baseline_threshold_slider = baseline_threshold
-
-    evaluation = [
-        {
-            "task_scope": baseline_to_use,
-            "source": attribute_pair.source.name,
-            "target": attribute_pair.target.name,
-            "decision": "yes" if similarity >= baseline_threshold else "no",
-            "ground_truth": attribute_pair in mss.ground_truth,
+        # show evaluation metrics
+        baseline_values = {
+            attribute_pair: BASELINES[baseline_to_use](
+                attribute_pair.source.name, attribute_pair.target.name
+            )
+            for attribute_pair, _ in mss.result.pairs.items()
         }
-        for attribute_pair, similarity in baseline_values.items()
-    ]
-    for scope in scopes_to_show:
-        for attribute_pair, votes in _get_votes_by_scope(result, scope).items():
-            if votes:
-                vote_count = pd.Series(votes).value_counts()
-                if vote_count.max() == 1:
-                    decision = "unknown"
-                else:
-                    decision = vote_count.idxmax()
-            else:
-                decision = "unknown"
-            evaluation.append(
+        best_threshold = _get_best_threshold(mss, baseline_values)
+        baseline_threshold = st.slider(
+            "Choose a threshold:",
+            0.0,
+            1.0,
+            best_threshold,
+            key="baseline_threshold_slider",
+        )
+
+    results_to_show = [mss.result]
+    if mss.compare_to:
+        results_to_show.append(mss.compare_to)
+    experiment_names = [r.name for r in results_to_show]
+    evaluation = []
+    for result in results_to_show:
+        evaluation.extend(
+            [
                 {
-                    "task_scope": scope,
+                    "experiment": result.name,
+                    "task_scope": baseline_to_use,
                     "source": attribute_pair.source.name,
                     "target": attribute_pair.target.name,
-                    "decision": decision,
+                    "decision": "yes" if similarity >= baseline_threshold else "no",
                     "ground_truth": attribute_pair in mss.ground_truth,
                 }
-            )
+                for attribute_pair, similarity in baseline_values.items()
+            ]
+        )
+        for scope in scopes_to_show:
+            for attribute_pair, votes in _get_votes_by_scope(result, scope).items():
+                if votes:
+                    vote_count = pd.Series(votes).value_counts()
+                    # majority vote (unknown if three-way tie)
+                    if vote_count.max() == 1:
+                        decision = "unknown"
+                    else:
+                        decision = vote_count.idxmax()
+                else:
+                    decision = "unknown"
+                evaluation.append(
+                    {
+                        "experiment": result.name,
+                        "task_scope": scope,
+                        "source": attribute_pair.source.name,
+                        "target": attribute_pair.target.name,
+                        "decision": decision,
+                        "ground_truth": attribute_pair in mss.ground_truth,
+                    }
+                )
+
     evaluation = pd.DataFrame(evaluation)
     score_columns = [baseline_to_use] + sorted(scopes_to_show)
     scores = (
-        evaluation.groupby("task_scope")
+        evaluation.groupby(["experiment", "task_scope"])
         .apply(
             lambda group: pd.Series(
                 precision_recall_fscore_support(
@@ -142,19 +135,32 @@ def create_evaluation_screen(mss: ModelSessionState):
             ),
             include_groups=False,
         )
-        .loc[score_columns]
+        .sort_index()
     )
-    labels = [
-        [
-            f"{f1_score:.3f} ({scores.loc[scope, 'precision']:.2f}, {scores.loc[scope, 'recall']:.2f})"
-            for scope, f1_score in scores["f1-score"].items()
-        ]
-    ]
+    labels = []
+    values = []
+    for exp_n in experiment_names:
+        lbl_row = []
+        val_row = []
+        for scope in score_columns:
+            lbl_row.append(
+                (
+                    f"{scores.loc[(exp_n, scope), 'f1-score']:.3f} "
+                    f"({scores.loc[(exp_n, scope), 'precision']:.2f}, "
+                    f"{scores.loc[(exp_n, scope), 'recall']:.2f})"
+                )
+            )
+            val_row.append(
+                scores.loc[(exp_n, scope), "f1-score"]
+                - scores.loc[(exp_n, baseline_to_use), "f1-score"]
+            )
+        labels.append(lbl_row)
+        values.append(val_row)
     fig = go.Figure(
         data=go.Heatmap(
             x=score_columns,
-            y=[""],
-            z=[scores["f1-score"].values],
+            y=experiment_names,
+            z=values,
             text=labels,
             texttemplate="%{text}",
             textfont={"size": 20},
@@ -165,14 +171,14 @@ def create_evaluation_screen(mss: ModelSessionState):
         ),
         layout={
             "title": "F1-score (precision, recall)",
-            "height": 250,
+            "height": 200 + 40 * len(experiment_names),
             "width": 1000,
             "yaxis": {"autorange": "reversed"},
         },
     )
     st.plotly_chart(fig, use_container_width=True)
     decisiveness = (
-        evaluation.groupby("task_scope")
+        evaluation.groupby(["experiment", "task_scope"])
         .apply(
             lambda group: pd.Series(
                 1 - group[group["decision"] == "unknown"].shape[0] / group.shape[0],
@@ -180,13 +186,17 @@ def create_evaluation_screen(mss: ModelSessionState):
             ),
             include_groups=False,
         )
-        .loc[score_columns]
+        .sort_index()
     )
+    values = [
+        [decisiveness.loc[(exp_n, scope), "decisiveness"] for scope in score_columns]
+        for exp_n in experiment_names
+    ]
     fig = go.Figure(
         data=go.Heatmap(
             x=score_columns,
-            y=[""],
-            z=[decisiveness["decisiveness"].values],
+            y=experiment_names,
+            z=values,
             texttemplate="%{z:.2f}",
             textfont={"size": 20},
             colorscale="PRGn",
@@ -196,7 +206,7 @@ def create_evaluation_screen(mss: ModelSessionState):
         ),
         layout={
             "title": "Decisiveness (fraction of non-unknown decisions)",
-            "height": 250,
+            "height": 200 + 40 * len(experiment_names),
             "width": 1000,
             "yaxis": {"autorange": "reversed"},
         },
@@ -286,3 +296,24 @@ def _get_votes_by_scope(
             if _which_scope_is(vote.answer) == scope:
                 votes[pair].append(vote.vote)
     return votes
+
+
+def _get_best_threshold(
+    mss: ModelSessionState, baseline_values: Dict[AttributePair, float]
+) -> float:
+    # find the best (judging by the F1-score) baseline threshold
+    ap_order = list(
+        baseline_values.keys()
+    )  # the order does not matter, but needs to be consistent
+    y_true = [ap in mss.ground_truth for ap in ap_order]
+    thresholds = {}
+    for gt_ap in mss.ground_truth:
+        y_pred = [baseline_values[ap] >= baseline_values[gt_ap] for ap in ap_order]
+        thresholds[baseline_values[gt_ap]] = f1_score(
+            y_true,
+            y_pred,
+            pos_label=True,
+            average="binary",
+            zero_division=0.0,
+        )
+    return pd.Series(thresholds).idxmax()

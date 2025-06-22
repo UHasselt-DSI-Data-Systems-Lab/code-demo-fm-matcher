@@ -17,7 +17,7 @@ class ModelSessionState:
     uid_counter: int = 0 # used for generating unique ids for attributes
     experiment_counter: int = 0 # used for generating unique ids for experiments
     selected_attrs: list[int] = field(default_factory=list)
-    selected_llm: str = None  # llm selected by the user
+    selected_llm: str = None  # llm selected by the user (will be persisted in the parameters
     ground_truth: List[AttributePair] = field(default_factory=list)  # a list of attribute pairs that represent the ground truth
     ground_truth_enabled: bool = False
 

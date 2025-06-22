@@ -15,7 +15,7 @@ def create_feedback_screen(mss: ModelSessionState):
         mss.feedback = Feedback(general="")
 
     # Only show this part if at least one experiment executed before
-    if len(mss.all_results) == 0:
+    if mss.result is None:
         return
 
     st.header("Feedback")

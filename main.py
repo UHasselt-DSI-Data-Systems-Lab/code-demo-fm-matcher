@@ -3,13 +3,14 @@ import hmac
 
 import streamlit as st
 
-from utils.backend import schema_match
+from utils.backend import schema_match, get_available_openai_models
 from utils.models import Parameters, Relation, Vote
 from utils.screen_feedback import create_feedback_screen
 from utils.screen_evaluation import create_evaluation_screen
 from utils.screen_load import create_load_screen
 from utils.screen_visualize import create_visualize_screen
 from utils.model_session_state import ModelSessionState
+from utils.storage import get_similar_results_by_parameters
 
 st.set_page_config(layout="wide")
 
@@ -79,28 +80,23 @@ def _submit_button(mss: ModelSessionState):
         mss.target_relation
     ):
         submittable = False
-    button_text = "Run Schema Matching"
-    if len(mss.all_results) > 0:
-        button_text = "Run Schema Matching Again"
+    button_text = "Run Schema Matching Again"
+    if mss.result is None:
+        button_text = "Run Schema Matching"
     if st.button(button_text, disabled=not submittable):
         mss.input_fixed = True
         with st.spinner("Matching schemas..."):
-            # create a deepcopy of all parameters to avoid changing params 
+            # create a deepcopy of all parameters to avoid changing params
             # (e.g. descriptions) of older experiments in the visualization
             # when changing descriptions in the input
             params = Parameters(
                 source_relation=deepcopy(mss.source_relation),
                 target_relation=deepcopy(mss.target_relation),
                 feedback=deepcopy(mss.feedback),
+                llm_model=mss.selected_llm,
             )
-            selected_llm = mss.selected_llm
-            result = schema_match(params, use_llm=selected_llm)
-
-            # st.info("Debug info: manual sleep time for testing purposes!")
-            # time.sleep(1)
-            # Change the name of the result to something unique
-            result.name = f"Experiment {mss.get_next_experiment_id()}"
-            mss.all_results.append(result)
+            result = schema_match(params)
+            mss.result = result
         st.rerun()
 
 
@@ -145,7 +141,7 @@ with st.sidebar:
         st.session_state["session_state"] = session_state_obj = ModelSessionState()
         st.rerun()
 
-    valid_llms = ["gpt-4o-mini", "gpt-3.5-turbo", "gpt-4-turbo", "gpt-4", "gpt-4o"]
+    valid_llms = get_available_openai_models()
     llm_selected = st.selectbox(
         "Select an LLM to use",
         options=valid_llms,
@@ -155,36 +151,43 @@ with st.sidebar:
         session_state_obj.selected_llm = llm_selected
 
     # Select result version(s) to visualize
-    num_exps = len(session_state_obj.all_results)
-    if num_exps >= 1:
+    if session_state_obj.result:
+        # similar experiments include the current experiment itself!
+        similar_experiments = get_similar_results_by_parameters(
+            session_state_obj.result.parameters
+        )
+        selected_index = None
+        for i, e in enumerate(similar_experiments):
+            if e.digest() == session_state_obj.result.digest():
+                selected_index = i
         selected = st.selectbox(
             "Selected result",
-            options=reversed([result.name for result in session_state_obj.all_results]),
-            index=0,
+            options=[r.name for r in similar_experiments],
+            index=selected_index,
         )
         if selected is not None:
             session_state_obj.result = next(
-                result
-                for result in session_state_obj.all_results
-                if result.name == selected
+                filter(lambda r: r.name == selected, similar_experiments)
             )
         else:
             session_state_obj.result = None
             session_state_obj.compare_to = None
-        # only show compare-to option if at least 2 experiments exist. Note that this can be None to disable comparison
-        if selected is not None and num_exps >= 2:
+        # only show compare-to option if at least 2 experiments exist.
+        # Note that this can be None to disable comparison
+        if selected is not None and len(similar_experiments) >= 2:
             compare_to = st.selectbox(
                 "Compare to",
-                options=reversed(
-                    [result.name for result in session_state_obj.all_results]
-                ),
+                options=[
+                    result.name
+                    for result in filter(
+                        lambda r: r.name != selected, similar_experiments
+                    )
+                ],
                 index=None,
             )
-            if compare_to is not None:
+            if compare_to is not None and (compare_to != selected):
                 session_state_obj.compare_to = next(
-                    result
-                    for result in session_state_obj.all_results
-                    if result.name == compare_to
+                    filter(lambda r: r.name == compare_to, similar_experiments)
                 )
             else:
                 session_state_obj.compare_to = None

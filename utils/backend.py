@@ -1,3 +1,5 @@
+from typing import List
+
 from .config import config
 from .models import Answer, Feedback, Parameters, PromptAttributePair, Relation, Result
 from .prompt_sending import send_prompts
@@ -8,28 +10,40 @@ from .storage import (
     store_result,
     get_parameters_by_hash,
     get_result_by_parameters,
+    _id_from_path,
 )
+
+
+def get_available_openai_models() -> List[str]:
+    from openai import OpenAI
+
+    if not config["QUERY_OPENAI"]:
+        return ["GPT-test", "GPT-test-2", "GPT-test-3"]
+    client = OpenAI()
+    return client.models.list()
 
 
 def schema_match(
     parameters: Parameters = None,
-    source_relation: Relation = None,
-    target_relation: Relation = None,
-    feedback: Feedback = None,
-    use_llm: str = None,
 ) -> Result:
     """Perform schema matching on two tables. Either provide a set of parameters or two tables and a feedback object."""
     if parameters is None:
-        if source_relation is None or target_relation is None or feedback is None:
-            raise ValueError(
-                "Either provide parameters or source and target relation and feedback object."
-            )
-        else:
-            parameters = Parameters(
-                source_relation=source_relation,
-                target_relation=target_relation,
-                feedback=feedback,
-            )
+        raise ValueError("You need to provide parameters for this method.")
+
+    stored_params = get_parameters_by_hash(parameters.digest())
+    if stored_params is None:
+        parameters = store_parameters(parameters)
+    else:
+        parameters = stored_params
+    result = get_result_by_parameters(parameters)
+    if result is not None:
+        return result
+    prompts = build_prompts(
+        parameters,
+        templates=["oneToN", "nToOne", "nToN"],
+        modes=[PromptDesign.oneToN, PromptDesign.nToOne, PromptDesign.nToN],
+        model=parameters.llm_model,
+    )
 
     if not config["QUERY_OPENAI"]:
         # method stub
@@ -47,8 +61,7 @@ def schema_match(
                 parameters.target_relation.attributes,
             )
         ]
-        return Result(
-            name="test",
+        result = Result(
             parameters=parameters,
             pairs={
                 ap: ResultPair(
@@ -64,8 +77,8 @@ def schema_match(
                                 ),
                                 "testing",
                                 1,
-                                True
-                            )
+                                True,
+                            ),
                         )
                         for rs in random.choices(
                             [Vote.YES, Vote.NO, Vote.UNKNOWN], weights=[1, 5, 2], k=3
@@ -76,22 +89,14 @@ def schema_match(
                 for ap in attribute_pairs
             },
         )
-
-    stored_params = get_parameters_by_hash(parameters.digest())
-    if stored_params is None:
-        parameters = store_parameters(parameters)
     else:
-        parameters = stored_params
-    result = get_result_by_parameters(parameters)
-    if result is not None:
-        return result
-    prompts = build_prompts(
-        parameters,
-        templates=["oneToN", "nToOne", "nToN"],
-        modes=[PromptDesign.oneToN, PromptDesign.nToOne, PromptDesign.nToN],
-        model=use_llm,
+        answers = send_prompts(parameters, prompts)
+        result = postprocess_answers(parameters, answers)
+    result.name = (
+        f"{result.parameters.source_relation.name} -> "
+        f"{result.parameters.target_relation.name} "
+        f"({result.parameters.llm_model}) "
+        f"{_id_from_path(result.parameters.meta['path'])}"
     )
-    answers = send_prompts(parameters, prompts)
-    result = postprocess_answers(parameters, answers)
     result = store_result(result)
     return result

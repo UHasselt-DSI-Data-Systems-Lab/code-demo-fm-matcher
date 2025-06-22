@@ -139,6 +139,7 @@ class Feedback:
 class Parameters:
     source_relation: Relation
     target_relation: Relation
+    llm_model: str
     feedback: Feedback = field(default_factory=Feedback)
     meta: Dict[str, str] = field(default_factory=dict)
 
@@ -148,6 +149,7 @@ class Parameters:
                 self.source_relation.digest()
                 + self.target_relation.digest()
                 + self.feedback.digest()
+                + self.llm_model
             ).encode()
         ).hexdigest()
 
@@ -156,12 +158,19 @@ class Parameters:
         return Parameters(
             source_relation=Relation.from_dict(data["source_relation"]),
             target_relation=Relation.from_dict(data["target_relation"]),
+            llm_model=data.get("llm_model", ""),
             feedback=Feedback.from_dict(data.get("feedback", {})),
             meta=data.get("meta", {}),
         )
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
+
+    def about_the_same(self, other: "Parameters") -> bool:
+        return (
+            (self.source_relation.digest() == other.source_relation.digest()) and
+            (self.target_relation.digest() == other.target_relation.digest())
+        )
 
 
 @dataclass

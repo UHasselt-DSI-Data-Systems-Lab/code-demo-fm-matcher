@@ -228,6 +228,20 @@ def get_parameters_by_hash(the_hash: str) -> Optional[Parameters]:
     return parameters
 
 
+def get_all_parameters() -> List[Parameters]:
+    if config["SQLITE_PATH"] is None:
+        return None
+    db_path = config["SQLITE_PATH"]
+    parameters = []
+    with get_connection(db_path) as con:
+        results = con.execute(
+            "SELECT hash FROM parameters;",
+        ).fetchall()
+        for result in results:
+            parameters.append(get_parameters_by_hash(result[0]))
+    return parameters
+
+
 def get_result_by_parameters(parameters: Parameters) -> Optional[Result]:
     """Returns the result for the given parameters. If the result is not stored, returns None."""
     if config["SQLITE_PATH"] is None:
@@ -254,7 +268,7 @@ def get_prompt_by_parameters(parameters: Parameters) -> List[Prompt]:
     with get_connection(db_path) as con:
         sql_result = con.execute(
             "SELECT id, data FROM prompts WHERE parameters_id=?;",
-            (_id_from_path(parameters.meta["path"]),)
+            (_id_from_path(parameters.meta["path"]),),
         ).fetchall()
         for result in sql_result:
             prompt = Prompt.from_dict(json.loads(result[1]))
@@ -279,3 +293,14 @@ def get_answers_by_prompt(prompt: Prompt, filter_valid: bool = False) -> List[An
         ).fetchall()
         answers = [Answer.from_dict(json.loads(res[0])) for res in sql_result]
     return answers
+
+
+def get_similar_results_by_parameters(parameters: Parameters) -> List[Result]:
+    if config["SQLITE_PATH"] is None:
+        return []
+    return [
+        get_result_by_parameters(param)
+        for param in filter(
+            lambda p: p.about_the_same(parameters), get_all_parameters()
+        )
+    ]
