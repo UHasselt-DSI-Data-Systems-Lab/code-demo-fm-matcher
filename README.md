@@ -26,7 +26,8 @@ Under Linux and in the containerized setting, you can use environment variables 
 
 * `OPENAI_API_KEY`: **REQUIRED** The OpenAI API key that will be used. There is no default, you will have to [create an OpenAI API key yourself](https://platform.openai.com/docs/quickstart).
 * `QUERY_OPENAI`: Set this to False to generate a random result instead of prompting the LLM. Useful for testing and developing. Default: `True`
-* `OPENAI_MODEL`: The OpenAI model that is used. Default: `gpt-4o-mini-2024-07-18`
+* `OPENAI_MODEL`: The default OpenAI model that is used. Does not have to be included in the list of models. Default: `o3-mini-2025-01-31`
+* `OPENAI_MODELS`: A list of OpenAI models that can be chosen in LLM-Matcher.
 * `OPENAI_N`: The number of answers that is requested from a model per prompt. Default: `3`
 * `OPENAI_TEMPERATURE`: The models [temperature setting](https://platform.openai.com/docs/api-reference/assistants/createAssistant#assistants-createassistant-temperature). Default: `1.0`
 * `OPENAI_TIMEOUT`: Timeout of the OpenAI API calls. There is some tenacity used to query the API, we would still recommend to test before setting this significantly lower. Default: `60`
