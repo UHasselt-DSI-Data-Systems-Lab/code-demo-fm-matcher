@@ -14,6 +14,12 @@ COLOR_NO_2 = "#F0E442"
 COLOR_UNKNOWN_2 = "#4a4a4a"
 
 
+def abbreviate_result_name(name: str) -> str:
+    if ":" in name:
+        return name[: name.find(":")]
+    return name
+
+
 def create_visualize_screen(mss: ModelSessionState):
     if mss.result is None:
         # st.warning("No results to visualize yet")
@@ -33,7 +39,9 @@ def create_visualize_screen(mss: ModelSessionState):
             css_styles=f'span:has(+ input[aria-checked="true"]) {{background-color: {COLOR_YES};border-color: {COLOR_YES};}}',
         ):
             show_yes = st.checkbox(
-                f"Show yes-votes for {result.name}", value=True, key="vote_yes_checkbox"
+                f"Show yes-votes for {abbreviate_result_name(result.name)}",
+                value=True,
+                key="vote_yes_checkbox",
             )
     with cols[1]:
         with stylable_container(
@@ -41,7 +49,9 @@ def create_visualize_screen(mss: ModelSessionState):
             css_styles=f'span:has(+ input[aria-checked="true"]) {{background-color: {COLOR_NO};border-color: {COLOR_NO};}}',
         ):
             show_no = st.checkbox(
-                f"Show no-votes for {result.name}", value=True, key="vote_no_checkbox"
+                f"Show no-votes for {abbreviate_result_name(result.name)}",
+                value=True,
+                key="vote_no_checkbox",
             )
     with cols[2]:
         with stylable_container(
@@ -49,7 +59,7 @@ def create_visualize_screen(mss: ModelSessionState):
             css_styles=f'span:has(+ input[aria-checked="true"]) {{background-color: {COLOR_UNKNOWN};border-color: {COLOR_UNKNOWN};}}',
         ):
             show_unknown = st.checkbox(
-                f"Show unknown-votes for {result.name}",
+                f"Show unknown-votes for {abbreviate_result_name(result.name)}",
                 value=False,
                 key="vote_unknown_checkbox",
             )
@@ -62,7 +72,7 @@ def create_visualize_screen(mss: ModelSessionState):
                 css_styles=f'span:has(+ input[aria-checked="true"]) {{background-color: {COLOR_YES_2};border-color: {COLOR_YES_2};}}',
             ):
                 show_yes_ct = st.checkbox(
-                    f"Show yes-votes for {compare_to.name}",
+                    f"Show yes-votes for {abbreviate_result_name(compare_to.name)}",
                     value=True,
                     key="vote_yes_checkbox_2",
                 )
@@ -72,7 +82,7 @@ def create_visualize_screen(mss: ModelSessionState):
                 css_styles=f'span:has(+ input[aria-checked="true"]) {{background-color: {COLOR_NO_2};border-color: {COLOR_NO_2};}}',
             ):
                 show_no_ct = st.checkbox(
-                    f"Show no-votes for {compare_to.name}",
+                    f"Show no-votes for {abbreviate_result_name(compare_to.name)}",
                     value=True,
                     key="vote_no_checkbox_2",
                 )
@@ -82,7 +92,7 @@ def create_visualize_screen(mss: ModelSessionState):
                 css_styles=f'span:has(+ input[aria-checked="true"]) {{background-color: {COLOR_UNKNOWN_2};border-color: {COLOR_UNKNOWN_2};}}',
             ):
                 show_unknown_ct = st.checkbox(
-                    f"Show unknown-votes for {compare_to.name}",
+                    f"Show unknown-votes for {abbreviate_result_name(compare_to.name)}",
                     value=False,
                     key="vote_unknown_checkbox_2",
                 )
@@ -228,7 +238,6 @@ def _create_node_elements(result: Result) -> List[Dict[str, Any]]:
     ]
 
 
-
 def _create_bipartite_layout(
     left_attr_names: List[str], right_attr_names: List[str]
 ) -> Dict[str, Any]:
@@ -286,14 +295,14 @@ def _voting_details(
     cols = st.columns(num_cols)
     with cols[0]:
         if compare_to is not None:
-            st.subheader(f"Votes for {result.name}")
+            st.subheader(f"Votes for {abbreviate_result_name(result.name)}")
         votes = result.pairs[attr_pair].votes
         for i, vote in enumerate(votes):
             with st.expander(f"Vote {i+1}: {vote.vote.name}"):
                 st.markdown(vote.explanation)
     if compare_to is not None:
         with cols[1]:
-            st.subheader(f"Votes for {compare_to.name}")
+            st.subheader(f"Votes for {abbreviate_result_name(compare_to.name)}")
             votes = compare_to.pairs[attr_pair].votes
             for i, vote in enumerate(votes):
                 with st.expander(f"Vote {i+1}: {vote.vote.name}"):

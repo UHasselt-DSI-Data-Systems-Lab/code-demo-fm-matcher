@@ -15,12 +15,9 @@ from .storage import (
 
 
 def get_available_openai_models() -> List[str]:
-    from openai import OpenAI
-
-    if not config["QUERY_OPENAI"]:
-        return ["GPT-test", "GPT-test-2", "GPT-test-3"]
-    client = OpenAI()
-    return client.models.list()
+    if config["OPENAI_MODEL"] in config["OPENAI_MODELS"]:
+        config["OPENAI_MODELS"].remove(config["OPENAI_MODEL"])
+    return [config["OPENAI_MODEL"]] + config["OPENAI_MODELS"]
 
 
 def schema_match(
@@ -93,10 +90,10 @@ def schema_match(
         answers = send_prompts(parameters, prompts)
         result = postprocess_answers(parameters, answers)
     result.name = (
+        f"Exp. {_id_from_path(result.parameters.meta['path'])}: "
         f"{result.parameters.source_relation.name} -> "
         f"{result.parameters.target_relation.name} "
         f"({result.parameters.llm_model}) "
-        f"{_id_from_path(result.parameters.meta['path'])}"
     )
     result = store_result(result)
     return result

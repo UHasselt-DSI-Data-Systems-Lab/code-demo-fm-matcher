@@ -2,7 +2,15 @@ import os
 
 default_config = {
     "QUERY_OPENAI": True,  # if set to False, this generates a random result instead of prompting the LLM
-    "OPENAI_MODEL": "gpt-4o-mini-2024-07-18",  # the model to use on the OpenAI API
+    "OPENAI_MODEL": "o3-mini-2025-01-31",  # the default model to use on the OpenAI API
+    "OPENAI_MODELS": [
+        "gpt-4.1-2025-04-14",
+        "o4-mini-2025-04-16",
+        "o3-2025-04-16",
+        "gpt-4.1-mini-2025-04-14",
+        "gpt-4.1-nano-2025-04-14",
+
+    ],  # a list of alternative models choosable in LLM-matcher
     "OPENAI_N": 3,  # the number of answers to generate per prompt
     "OPENAI_TEMPERATURE": 1.0,  # the model temperature to use
     "OPENAI_TIMEOUT": 60,  # the timeout for OpenAI API calls
